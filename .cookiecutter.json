@@ -1,0 +1,13 @@
+{
+  "_template": "gh:cjolowicz/cookiecutter-hypermodern-python",
+  "author": "byeonhyeok",
+  "copyright_year": "2022",
+  "development_status": "Development Status :: 1 - Planning",
+  "email": "bhrevol@gmail.com",
+  "friendly_name": "DLsite Async",
+  "github_user": "bhrevol",
+  "license": "MIT",
+  "package_name": "dlsite_async",
+  "project_name": "dlsite-async",
+  "version": "0.0.0"
+}
