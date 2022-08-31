@@ -1,0 +1,149 @@
+"""HTML scraper."""
+import logging
+from abc import ABC, abstractmethod
+from datetime import date, datetime
+from html import unescape
+from typing import Any, Dict, Iterable, List, cast
+
+from lxml import html
+
+from .exceptions import ScrapingError
+
+
+logger = logging.getLogger()
+
+
+class _RowParser(ABC):
+    """Work outline table row parser."""
+
+    def __init__(self, field: str, headers: Iterable[str]):
+        self.field = field
+        self.headers = set(headers)
+
+    @staticmethod
+    def _unescape(content: str) -> str:
+        return unescape(content).replace("\xa0", " ").strip()
+
+    def can_parse(self, th: html.HtmlElement) -> bool:
+        """Return whether or not row can be parsed based on header."""
+        header = self._unescape(th.text_content())
+        return header in self.headers
+
+    @abstractmethod
+    def parse_value(self, td: html.HtmlElement) -> Any:
+        """Parse the specfied table cell value."""
+        return self._unescape(td.text_content())
+
+
+class _DateRowParser(_RowParser):
+    """Date row parser."""
+
+    def parse_value(self, td: html.HtmlElement) -> date:
+        """Parse the specfied table cell value."""
+        value = cast(str, super().parse_value(td))
+        return self._to_date(value.split()[0])
+
+    @staticmethod
+    def _to_date(value: str) -> date:
+        for fmt in ("%Y年%m月%d日", "%b/%d/%Y", "%B/%d/%Y"):
+            try:
+                return datetime.strptime(value, fmt).date()
+            except ValueError:
+                pass
+        raise ScrapingError(f"Failed to parse date string {value}")
+
+
+class _IntRowParser(_RowParser):
+    """Integer row parser."""
+
+    def parse_value(self, td: html.HtmlElement) -> int:
+        """Parse the specfied table cell value."""
+        try:
+            value = super().parse_value(td)
+            return int(value)
+        except ValueError as e:
+            raise ScrapingError(f"Failed to parse integer {value}") from e
+
+
+class _MakerRowParser(_RowParser):
+    """Maker row parser."""
+
+    def parse_value(self, td: html.HtmlElement) -> str:
+        """Parse the specfied table cell value."""
+        try:
+            span = td.xpath('//span[@class="maker_name"]')[0]
+        except IndexError as e:
+            raise ScrapingError(f"Failed to parse cell {td}") from e
+        return self._unescape(cast(str, span.text_content()))
+
+
+class _ListRowParser(_RowParser):
+    """Item list row parser."""
+
+    def parse_value(self, td: html.HtmlElement) -> List[str]:
+        """Parse the specfied table cell value."""
+        return [self._unescape(a.text_content()) for a in td.xpath(".//a")]
+
+
+class _TextRowParser(_RowParser):
+    """Text row parser."""
+
+    def parse_value(self, td: html.HtmlElement) -> str:
+        """Parse the specfied table cell value."""
+        return cast(str, super().parse_value(td))
+
+
+_parsers = [
+    _DateRowParser("announce_date", ("予告開始日", "Published date")),
+    _DateRowParser(
+        "modified_date",
+        ("最終更新日", "更新情報", "Last updated", "Update information"),
+    ),
+    _IntRowParser("page_count", ("ページ数", "Page count")),
+    _MakerRowParser("brand", ("ブランド名", "Brand")),
+    _MakerRowParser("circle", ("サークル名", "Circle")),
+    _MakerRowParser("publisher", ("出版社名", "Publisher")),
+    _MakerRowParser("label", ("レーベル", "Label")),
+    _ListRowParser("author", ("作者", "著者", "Author")),
+    _ListRowParser("event", ("イベント", "Event")),
+    _ListRowParser("file_format", ("ファイル形式", "File format")),
+    _ListRowParser("illustration", ("イラスト", "Illustration")),
+    _ListRowParser("genre", ("ジャンル", "Genre")),
+    _ListRowParser("music", ("音楽", "Music")),
+    _ListRowParser("scenario", ("シナリオ", "Scenario")),
+    _ListRowParser("voice_actor", ("声優", "Voice Actor")),
+    _ListRowParser("writer", ("作家", "Writer")),
+    _TextRowParser("file_size", ("ファイル容量", "File size")),
+    _TextRowParser("series", ("シリーズ名", "Series", "Series name")),
+]
+
+
+def parse_work_html(content: str) -> Dict[str, Any]:
+    """Parse work HTML."""
+    tree = html.fromstring(content)
+    info: Dict[str, Any] = {}
+    for table in (
+        '//table[@id="work_maker"]//tr',
+        '//table[@id="work_outline"]//tr',
+    ):
+        info.update(_parse_work_outline_rows(cast(html.HtmlElement, tree.xpath(table))))
+    return info
+
+
+def _parse_work_outline_rows(trs: Iterable[html.HtmlElement]) -> Any:
+    for tr in trs:
+        try:
+            th = tr.xpath(".//th")[0]
+            td = tr.xpath(".//td")[0]
+        except IndexError:
+            logger.exception(f"Failed to parse outline row: {tr}")
+            continue
+        for parser in _parsers:
+            if parser.can_parse(th):
+                try:
+                    yield parser.field, parser.parse_value(td)
+                except ScrapingError:
+                    pass
+                break
+        else:
+            logger.debug(f"No matching parser for outline row: {tr}")
