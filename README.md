@@ -21,11 +21,21 @@
 
 ## Features
 
-- Async DLsite API
+- Async DLsite API for fetching work metadata
+- Supports most DLsite sites:
+  - Comipo (`comic`)
+  - Doujin (All-ages/`home`, Adult/`maniax`)
+  - Adult comics (`books`)
+  - All-ages games (`soft`)
+  - Galge (`pro`)
+  - Apps (`appx`)
+- Supports common metadata for most DLsite work types
+- Japanese and English locale support
+  (English metadata may not be available for all works)
 
 ## Requirements
 
-- TODO
+- Python 3.8+
 
 ## Installation
 
@@ -35,9 +45,72 @@ You can install _DLsite Async_ via [pip] from [PyPI]:
 $ pip install dlsite-async
 ```
 
-## Usage
+## Usage examples
 
-Please see the [Command-line Reference] for details.
+Fetch manga information:
+
+```py
+>>> import asyncio
+>>> from dlsite_async import DlsiteAPI
+>>> async def f():
+...     async with DlsiteAPI() as api:
+...         return await api.get_work("BJ370220")
+...
+>>> asyncio.run(f())
+Work(
+    product_id='BJ370220',
+    site_id='comic',
+    maker_id='BG01675',
+    work_name='衛宮さんちの今 日のごはん (6)\u3000レシピ本付特装版',
+    age_category=<AgeCategory.ALL_AGES: 1>,
+    circle=None,
+    brand=None,
+    publisher='KADOKAWA',
+    work_image='//img.dlsite.jp/.../BJ370220_img_main.jpg',
+    regist_date=datetime.datetime(2021, 10, 28, 0, 0),
+    work_type=<WorkType.MANGA: 'MNG'>,
+    book_type=<BookType.BOOK: 'comic'>,
+    ...
+    author=['TAa', '只野まこと', 'ＴＹＰＥ−ＭＯＯＮ'],
+    ...
+    genre=['少年コミック', 'ギャグ', 'コメディ', 'ほのぼの'],
+    label='KADOKAWA',
+    ...
+    page_count=307
+)
+```
+
+Fetch English voice/ASMR information:
+
+```py
+>>> async def f():
+...     async with DlsiteAPI(locale="en_US") as api:
+...         return await api.get_work("RJ294126")
+...
+>>> asyncio.run(f())
+Work(
+    product_id='RJ294126',
+    site_id='maniax',
+    maker_id='RG51931',
+    work_name='Pure Pussy on Duty',
+    age_category=<AgeCategory.R18: 3>,
+    circle='aoharu fetishism',
+    brand=None,
+    publisher=None,
+    work_image='//img.dlsite.jp/.../RJ294126_img_main.jpg',
+    regist_date=datetime.datetime(2020, 8, 30, 0, 0),
+    work_type=<WorkType.VOICE_ASMR: 'SOU'>,
+    ...
+    illustration=['ぬこぷし'],
+    voice_actor=['逢坂成美'],
+    ...
+    genre=['Healing', 'Dirty Talk', 'Binaural', 'ASMR', ...],
+    ...
+    file_format=['WAV'],
+    file_size='Total 010.63GB',
+    ...
+)
+```
 
 ## Contributing
 
