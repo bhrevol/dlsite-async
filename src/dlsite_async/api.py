@@ -9,7 +9,7 @@ from aiohttp.client import _RequestContextManager
 
 from ._scraper import parse_circle_html, parse_work_html
 from .circle import Circle
-from .exceptions import DLsiteError
+from .exceptions import DlsiteError
 from .work import AgeCategory, BookType, Work, WorkType
 
 
@@ -70,14 +70,14 @@ class DlsiteAPI(AsyncContextManager["DlsiteAPI"]):
         Returns: Minimal product information.
 
         Raises:
-            DLsiteError: Failed to get product info.
+            DlsiteError: Failed to get product info.
         """
         url = "https://www.dlsite.com/maniax/product/info/ajax"
         params = {"product_id": product_id}
         async with self.get(url, params=params) as response:
             data = await response.json()
         if not data or product_id not in data:
-            raise DLsiteError(f"Failed to get product info for {product_id}")
+            raise DlsiteError(f"Failed to get product info for {product_id}")
         info = data[product_id]
         info["product_id"] = product_id
         info["age_category"] = AgeCategory(info["age_category"])
@@ -120,11 +120,11 @@ class DlsiteAPI(AsyncContextManager["DlsiteAPI"]):
         Returns: Circle information.
 
         Raises:
-            DLsiteError: Failed to fetch circle information.
+            DlsiteError: Failed to fetch circle information.
         """
         html = await self._fetch_circle_html(maker_id)
         if not html:
-            raise DLsiteError(f"Failed to get circle {maker_id}")
+            raise DlsiteError(f"Failed to get circle {maker_id}")
         info = parse_circle_html(html)
         info["maker_id"] = maker_id
         return Circle.from_dict(info)

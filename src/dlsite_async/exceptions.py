@@ -1,13 +1,13 @@
 """Exception classes."""
 
 
-class DLsiteError(Exception):
+class DlsiteError(Exception):
     """Base DLsite exception."""
 
 
-class InvalidIDError(DLsiteError):
+class InvalidIDError(DlsiteError):
     """Invalid DLsite ID error."""
 
 
-class ScrapingError(DLsiteError):
+class ScrapingError(DlsiteError):
     """HTML scraping error."""
