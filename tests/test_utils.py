@@ -15,13 +15,13 @@ from dlsite_async.utils import find_maker_id, find_product_id
         ("VJ1234", "VJ1234"),
     ],
 )
-def test_find_product_id(s: str, product_id: str):
+def test_find_product_id(s: str, product_id: str) -> None:
     """Should match expected product ID."""
     assert find_product_id(s) == product_id
 
 
 @pytest.mark.parametrize("s", ["ARJ1234", "RJ-1234", "RJ", "1234", "some title"])
-def test_find_product_id_failed(s: str):
+def test_find_product_id_failed(s: str) -> None:
     """Should fail to match a product ID."""
     with pytest.raises(InvalidIDError):
         find_product_id(s)
@@ -37,13 +37,13 @@ def test_find_product_id_failed(s: str):
         ("VG1234", "VG1234"),
     ],
 )
-def test_find_maker_id(s: str, maker_id: str):
+def test_find_maker_id(s: str, maker_id: str) -> None:
     """Should match expected maker ID."""
     assert find_maker_id(s) == maker_id
 
 
 @pytest.mark.parametrize("s", ["ARG1234", "RG-1234", "RG", "1234", "some title"])
-def test_find_maker_id_failed(s: str):
+def test_find_maker_id_failed(s: str) -> None:
     """Should fail to match a maker ID."""
     with pytest.raises(InvalidIDError):
         find_maker_id(s)

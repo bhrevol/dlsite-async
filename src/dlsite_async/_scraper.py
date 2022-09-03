@@ -1,5 +1,6 @@
 """HTML scraper."""
 import logging
+import unicodedata
 from abc import ABC, abstractmethod
 from datetime import date, datetime
 from html import unescape
@@ -13,6 +14,11 @@ from .exceptions import ScrapingError
 logger = logging.getLogger()
 
 
+def _unescape(content: str) -> str:
+    """Return unescaped and normalized HTML content."""
+    return unicodedata.normalize("NFKC", unescape(content)).strip()
+
+
 class _RowParser(ABC):
     """Work outline table row parser."""
 
@@ -20,19 +26,15 @@ class _RowParser(ABC):
         self.field = field
         self.headers = set(headers)
 
-    @staticmethod
-    def _unescape(content: str) -> str:
-        return unescape(content).replace("\xa0", " ").strip()
-
     def can_parse(self, th: html.HtmlElement) -> bool:
         """Return whether or not row can be parsed based on header."""
-        header = self._unescape(th.text_content())
+        header = _unescape(th.text_content())
         return header in self.headers
 
     @abstractmethod
     def parse_value(self, td: html.HtmlElement) -> Any:
         """Parse the specfied table cell value."""
-        return self._unescape(td.text_content())
+        return _unescape(td.text_content())
 
 
 class _DateRowParser(_RowParser):
@@ -74,7 +76,7 @@ class _MakerRowParser(_RowParser):
             span = td.xpath('//span[@class="maker_name"]')[0]
         except IndexError as e:
             raise ScrapingError(f"Failed to parse cell {td}") from e
-        return self._unescape(cast(str, span.text_content()))
+        return _unescape(cast(str, span.text_content()))
 
 
 class _ListRowParser(_RowParser):
@@ -82,7 +84,7 @@ class _ListRowParser(_RowParser):
 
     def parse_value(self, td: html.HtmlElement) -> List[str]:
         """Parse the specfied table cell value."""
-        return [self._unescape(a.text_content()) for a in td.xpath(".//a")]
+        return [_unescape(a.text_content()) for a in td.xpath(".//a")]
 
 
 class _TextRowParser(_RowParser):
@@ -147,3 +149,16 @@ def _parse_work_outline_rows(trs: Iterable[html.HtmlElement]) -> Any:
                 break
         else:
             logger.debug(f"No matching parser for outline row: {tr}")
+
+
+def parse_circle_html(content: str) -> Dict[str, Any]:
+    """Parse circle HTML."""
+    tree = html.fromstring(content)
+    for strong in tree.xpath(  # type: ignore[union-attr]
+        '//strong[@class="prof_maker_name"]'
+    ):
+        info: Dict[str, Any] = {
+            "maker_name": _unescape(cast(html.HtmlElement, strong).text_content())
+        }
+        return info
+    raise ScrapingError("Failed to find maker name")

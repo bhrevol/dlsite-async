@@ -7,7 +7,8 @@ from typing import Any, Dict, Optional
 from aiohttp import ClientSession
 from aiohttp.client import _RequestContextManager
 
-from ._scraper import parse_work_html
+from ._scraper import parse_circle_html, parse_work_html
+from .circle import Circle
 from .exceptions import DLsiteError
 from .work import AgeCategory, BookType, Work, WorkType
 
@@ -63,13 +64,16 @@ class DlsiteAPI(AbstractAsyncContextManager["DlsiteAPI"]):
 
         Arguments:
             product_id: DLsite product ID.
+
+        Raises:
+            DLsiteError: Failed to get product info.
         """
         url = "https://www.dlsite.com/maniax/product/info/ajax"
         params = {"product_id": product_id}
         async with self.get(url, params=params) as response:
             data = await response.json()
         if not data or product_id not in data:
-            raise DLsiteError(f"Invalid DLsite product ID {product_id}")
+            raise DLsiteError(f"Failed to get product info for {product_id}")
         info = data[product_id]
         info["product_id"] = product_id
         info["age_category"] = AgeCategory(info["age_category"])
@@ -102,3 +106,26 @@ class DlsiteAPI(AbstractAsyncContextManager["DlsiteAPI"]):
                     html = await response.text()
                     break
         return html
+
+    async def get_circle(self, maker_id: str) -> Circle:
+        """Return the specified circle.
+
+        Arguments:
+            maker_id: DLsite maker ID.
+        """
+        html = await self._fetch_circle_html(maker_id)
+        if not html:
+            raise DLsiteError(f"Failed to get circle {maker_id}")
+        info = parse_circle_html(html)
+        info["maker_id"] = maker_id
+        return Circle.from_dict(info)
+
+    async def _fetch_circle_html(self, maker_id: str) -> Optional[str]:
+        url = (
+            f"https://www.dlsite.com/maniax/circle/profile"
+            f"/=/maker_id/{maker_id}.html"
+        )
+        async with self.get(url) as response:
+            if response.status == 200:
+                return await response.text()
+        return None

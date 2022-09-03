@@ -8,6 +8,7 @@ from aioresponses import aioresponses
 from pytest_mock import MockerFixture
 
 from dlsite_async.api import DlsiteAPI
+from dlsite_async.circle import Circle
 from dlsite_async.work import AgeCategory, BookType, Work, WorkType
 
 
@@ -43,7 +44,7 @@ _TEST_HTML_WORK = replace(
     voice_actor=["Test Seiyuu 1", "Test Seiyuu 2"],
     series="Test Series",
 )
-_TEST_HTML = r"""
+_WORK_TEST_HTML = r"""
 <html>
 <head />
 <body>
@@ -116,6 +117,37 @@ _TEST_HTML = r"""
 </html>
 """
 
+_TEST_MAKER = "RG1234"
+_TEST_CIRCLE = Circle(
+    maker_id=_TEST_MAKER,
+    maker_name="Test Circle",
+)
+_CIRCLE_TEST_HTML = r"""
+<html>
+<head />
+<body>
+<table cellspacing="0">
+  <tbody>
+    <tr>
+      <th>サークル名</th>
+      <td>
+        <div class="prof_maker_box">
+        <strong class="prof_maker_name">Test Circle</strong>
+        <div class="btn_follow">
+          <span class="add_follow">
+            <a href="#" class="_show_follow_login btn_follow btn_follow_in">
+              フォロー済み
+            </a>
+          </span>
+        </div>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</body>
+</html>
+"""
+
 
 def _check_work_eq(expected: Work, actual: Work) -> None:
     for field in fields(expected):
@@ -123,6 +155,15 @@ def _check_work_eq(expected: Work, actual: Work) -> None:
         value = getattr(expected, name, None)
         if value is not None:
             assert getattr(actual, name, None) == value
+
+
+def _check_circle_eq(expected: Circle, actual: Circle) -> None:
+    for field in fields(expected):
+        name = field.name
+        value = getattr(expected, name, None)
+        if value is not None:
+            assert getattr(actual, name, None) == value
+    assert expected.maker_type == actual.maker_type
 
 
 async def test_cookies() -> None:
@@ -166,7 +207,18 @@ async def test_fill_work_details(api: DlsiteAPI) -> None:
     with aioresponses() as m:  # type: ignore[no-untyped-call]
         m.get(
             _URL_PATTERN,
-            body=_TEST_HTML,
+            body=_WORK_TEST_HTML,
         )
         work = await api._fill_work_details(work)
         _check_work_eq(_TEST_HTML_WORK, work)
+
+
+async def test_get_circle(api: DlsiteAPI) -> None:
+    """Full circle info should be filled."""
+    with aioresponses() as m:  # type: ignore[no-untyped-call]
+        m.get(
+            _URL_PATTERN,
+            body=_CIRCLE_TEST_HTML,
+        )
+        circle = await api.get_circle(_TEST_MAKER)
+        _check_circle_eq(_TEST_CIRCLE, circle)
