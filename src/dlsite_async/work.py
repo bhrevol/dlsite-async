@@ -1,11 +1,11 @@
 """DLsite work classes."""
 from dataclasses import dataclass, fields
 from datetime import datetime
-from enum import Enum
+from enum import Enum, IntEnum
 from typing import Any, List, Mapping, Optional
 
 
-class AgeCategory(Enum):
+class AgeCategory(IntEnum):
     """Work age rating."""
 
     ALL_AGES = 1
@@ -13,7 +13,7 @@ class AgeCategory(Enum):
     R18 = 3
 
 
-class BookType(Enum):
+class BookType(str, Enum):
     """Book type."""
 
     BOOK = "comic"
@@ -21,7 +21,7 @@ class BookType(Enum):
     STANDALONE = "oneshot"
 
 
-class WorkType(Enum):
+class WorkType(str, Enum):
     """Work type."""
 
     ACTION = "ACN"
