@@ -150,7 +150,14 @@ def mypy(session: Session) -> None:
     """Type-check using mypy."""
     args = session.posargs or ["src", "tests", "docs/conf.py"]
     session.install(".")
-    session.install("mypy", "pytest", "lxml-stubs")
+    session.install(
+        "aioresponses",
+        "lxml-stubs",
+        "mypy",
+        "pytest",
+        "pytest-asyncio",
+        "pytest-mock",
+    )
     session.run("mypy", *args)
     if not session.posargs:
         session.run("mypy", f"--python-executable={sys.executable}", "noxfile.py")
@@ -161,12 +168,12 @@ def tests(session: Session) -> None:
     """Run the test suite."""
     session.install(".")
     session.install(
+        "aioresponses",
         "coverage[toml]",
-        "pytest",
         "pygments",
+        "pytest",
         "pytest-asyncio",
         "pytest-mock",
-        "aioresponses",
     )
     try:
         session.run("coverage", "run", "--parallel", "-m", "pytest", *session.posargs)
@@ -192,7 +199,14 @@ def coverage(session: Session) -> None:
 def typeguard(session: Session) -> None:
     """Runtime type checking using Typeguard."""
     session.install(".")
-    session.install("pytest", "typeguard", "pygments")
+    session.install(
+        "aioresponses",
+        "pygments",
+        "pytest",
+        "pytest-asyncio",
+        "pytest-mock",
+        "typeguard",
+    )
     session.run("pytest", f"--typeguard-packages={package}", *session.posargs)
 
 

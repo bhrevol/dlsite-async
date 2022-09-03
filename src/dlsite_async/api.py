@@ -1,8 +1,8 @@
 """DLsite API classes."""
-from contextlib import AbstractAsyncContextManager, AsyncExitStack
+from contextlib import AsyncExitStack
 from dataclasses import replace
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, AsyncContextManager, Dict, Optional
 
 from aiohttp import ClientSession
 from aiohttp.client import _RequestContextManager
@@ -17,7 +17,7 @@ def _datetime_from_timestamp(timestamp: str) -> datetime:
     return datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
 
 
-class DlsiteAPI(AbstractAsyncContextManager["DlsiteAPI"]):
+class DlsiteAPI(AsyncContextManager["DlsiteAPI"]):
     """DLsite API session.
 
     Arguments:
