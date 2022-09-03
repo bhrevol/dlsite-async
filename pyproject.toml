@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dlsite-async"
-version = "0.0.0"
+version = "0.0.1"
 description = "DLsite Async"
 authors = ["byeonhyeok <bhrevol@gmail.com>"]
 license = "MIT"
