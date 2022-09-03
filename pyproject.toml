@@ -17,7 +17,6 @@ Changelog = "https://github.com/bhrevol/dlsite-async/releases"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-click = ">=8.0.1"
 lxml = "^4.9.1"
 aiohttp = "^3.8.1"
 
@@ -42,7 +41,6 @@ pyupgrade = ">=2.29.1"
 safety = ">=1.10.3"
 sphinx = ">=4.3.2"
 sphinx-autobuild = ">=2021.3.14"
-sphinx-click = ">=3.0.2"
 typeguard = ">=2.13.3"
 xdoctest = {extras = ["colors"], version = ">=0.15.10"}
 myst-parser = {version = ">=0.16.1"}
@@ -50,9 +48,6 @@ lxml-stubs = "^0.4.0"
 pytest-asyncio = "^0.19.0"
 pytest-mock = "^3.8.2"
 aioresponses = "^0.7.3"
-
-[tool.poetry.scripts]
-dlsite-async = "dlsite_async.__main__:main"
 
 [tool.bandit]
 skips = ["B320"]
