@@ -55,6 +55,8 @@ class DlsiteAPI(AsyncContextManager["DlsiteAPI"]):
 
         Arguments:
             product_id: DLsite product ID.
+
+        Returns: Complete work information.
         """
         work = await self.product_info(product_id)
         return await self._fill_work_details(work)
@@ -64,6 +66,8 @@ class DlsiteAPI(AsyncContextManager["DlsiteAPI"]):
 
         Arguments:
             product_id: DLsite product ID.
+
+        Returns: Minimal product information.
 
         Raises:
             DLsiteError: Failed to get product info.
@@ -112,6 +116,11 @@ class DlsiteAPI(AsyncContextManager["DlsiteAPI"]):
 
         Arguments:
             maker_id: DLsite maker ID.
+
+        Returns: Circle information.
+
+        Raises:
+            DLsiteError: Failed to fetch circle information.
         """
         html = await self._fetch_circle_html(maker_id)
         if not html:

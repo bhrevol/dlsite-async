@@ -19,6 +19,11 @@ class MakerType(Enum):
 
         Arguments:
             maker_id: Maker ID
+
+        Returns: Maker type.
+
+        Raises:
+            InvalidIDError: maker_id was invalid.
         """
         if maker_id[:2] == "RG":
             return MakerType.CIRCLE
