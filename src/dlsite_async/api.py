@@ -20,8 +20,8 @@ def _datetime_from_timestamp(timestamp: str) -> datetime:
 class DlsiteAPI(AsyncContextManager["DlsiteAPI"]):
     """DLsite API session.
 
-    Arguments:
-        locale: Optional locale. Defaults to ja_JP.
+    Args:
+        locale: Optional locale. Defaults to ``ja_JP``.
     """
 
     def __init__(self, locale: Optional[str] = None):
@@ -53,10 +53,11 @@ class DlsiteAPI(AsyncContextManager["DlsiteAPI"]):
     async def get_work(self, product_id: str) -> Work:
         """Return the specified work.
 
-        Arguments:
+        Args:
             product_id: DLsite product ID.
 
-        Returns: Complete work information.
+        Returns:
+            Complete work information.
         """
         work = await self.product_info(product_id)
         return await self._fill_work_details(work)
@@ -64,10 +65,11 @@ class DlsiteAPI(AsyncContextManager["DlsiteAPI"]):
     async def product_info(self, product_id: str) -> Work:
         """Return ajax API product info.
 
-        Arguments:
+        Args:
             product_id: DLsite product ID.
 
-        Returns: Minimal product information.
+        Returns:
+            Minimal product information.
 
         Raises:
             DlsiteError: Failed to get product info.
@@ -114,10 +116,11 @@ class DlsiteAPI(AsyncContextManager["DlsiteAPI"]):
     async def get_circle(self, maker_id: str) -> Circle:
         """Return the specified circle.
 
-        Arguments:
+        Args:
             maker_id: DLsite maker ID.
 
-        Returns: Circle information.
+        Returns:
+            Circle information.
 
         Raises:
             DlsiteError: Failed to fetch circle information.

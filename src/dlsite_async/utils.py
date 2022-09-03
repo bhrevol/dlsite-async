@@ -14,10 +14,11 @@ def find_product_id(s: str) -> str:
     Arguments:
         s: String containing a product ID.
 
-    Returns: Product ID.
+    Returns:
+        Product ID.
 
     Raises:
-        InvalidIDError s did not contain a valid product ID.
+        InvalidIDError: `s` did not contain a valid product ID.
     """
     m = _PRODUCT_RE.search(s)
     if m:
@@ -31,10 +32,11 @@ def find_maker_id(s: str) -> str:
     Arguments:
         s: String containing a maker ID.
 
-    Returns: Maker ID.
+    Returns:
+        Maker ID.
 
     Raises:
-        InvalidIDError s did not contain a valid maker ID.
+        InvalidIDError: `s` did not contain a valid maker ID.
     """
     m = _MAKER_RE.search(s)
     if m:
