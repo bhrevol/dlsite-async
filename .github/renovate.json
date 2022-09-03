@@ -1,0 +1,20 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:base"],
+  "labels": ["dependencies"],
+  "packageRules": [
+    {
+      "matchDepTypes": ["dev-dependencies"],
+      "automerge": true,
+      "automergeType": "pr"
+    },
+    {
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "automerge": true,
+      "automergeType": "pr"
+    }
+  ],
+  "automergeStrategy": "rebase",
+  "platformAutomerge": true,
+  "rangeStrategy": "update-lockfile"
+}
