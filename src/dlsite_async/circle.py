@@ -6,7 +6,7 @@ from typing import Any, Mapping
 from .exceptions import InvalidIDError
 
 
-class MakerType(Enum):
+class MakerType(str, Enum):
     """Maker type."""
 
     BRAND = "brand"
