@@ -11,3 +11,7 @@ class InvalidIDError(DlsiteError):
 
 class ScrapingError(DlsiteError):
     """HTML scraping error."""
+
+
+class AuthenticationError(DlsiteError):
+    """Authentication error."""
