@@ -12,7 +12,7 @@ from dlsite_async.circle import Circle
 from dlsite_async.work import AgeCategory, BookType, Work, WorkType
 
 
-_URL_PATTERN = re.compile(r"^https://www.dlsite.com")
+_URL_PATTERN = re.compile(r"^https://www\.dlsite\.com")
 
 _TEST_PRODUCT = "RJ1234"
 _TEST_INFO = {

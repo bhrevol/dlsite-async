@@ -50,7 +50,7 @@ class _DateRowParser(_RowParser):
         for fmt in ("%Y年%m月%d日", "%b/%d/%Y", "%B/%d/%Y"):
             try:
                 return datetime.strptime(value, fmt).date()
-            except ValueError:
+            except ValueError:  # pragma: no cover
                 pass
         raise ScrapingError(f"Failed to parse date string {value}")
 
@@ -63,7 +63,7 @@ class _IntRowParser(_RowParser):
         try:
             value = super().parse_value(td)
             return int(value)
-        except ValueError as e:
+        except ValueError as e:  # pragma: no cover
             raise ScrapingError(f"Failed to parse integer {value}") from e
 
 
@@ -74,7 +74,7 @@ class _MakerRowParser(_RowParser):
         """Parse the specfied table cell value."""
         try:
             span = td.xpath('//span[@class="maker_name"]')[0]
-        except IndexError as e:
+        except IndexError as e:  # pragma: no cover
             raise ScrapingError(f"Failed to parse cell {td}") from e
         return _unescape(cast(str, span.text_content()))
 
@@ -137,14 +137,14 @@ def _parse_work_outline_rows(trs: Iterable[html.HtmlElement]) -> Any:
         try:
             th = tr.xpath(".//th")[0]
             td = tr.xpath(".//td")[0]
-        except IndexError:
+        except IndexError:  # pragma: no cover
             logger.exception(f"Failed to parse outline row: {tr}")
             continue
         for parser in _parsers:
             if parser.can_parse(th):
                 try:
                     yield parser.field, parser.parse_value(td)
-                except ScrapingError:
+                except ScrapingError:  # pragma: no cover
                     pass
                 break
         else:
@@ -161,7 +161,7 @@ def parse_circle_html(content: str) -> Dict[str, Any]:
             "maker_name": _unescape(cast(html.HtmlElement, strong).text_content())
         }
         return info
-    raise ScrapingError("Failed to find maker name")
+    raise ScrapingError("Failed to find maker name")  # pragma: no cover
 
 
 def parse_login_token(content: str) -> str:
