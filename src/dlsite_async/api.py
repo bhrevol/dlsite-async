@@ -2,33 +2,38 @@
 from contextlib import AsyncExitStack
 from dataclasses import replace
 from datetime import datetime
-from typing import Any, AsyncContextManager, Dict, Optional
+from netrc import netrc
+from typing import Any, AsyncContextManager, Dict, Optional, TypeVar
 
 from aiohttp import ClientSession
 from aiohttp.client import _RequestContextManager
 
-from ._scraper import parse_circle_html, parse_work_html
+from ._scraper import parse_circle_html, parse_login_token, parse_work_html
 from .circle import Circle
-from .exceptions import DlsiteError
+from .exceptions import AuthenticationError, DlsiteError
 from .work import AgeCategory, BookType, Work, WorkType
+
+
+_T = TypeVar("_T")
 
 
 def _datetime_from_timestamp(timestamp: str) -> datetime:
     return datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
 
 
-class DlsiteAPI(AsyncContextManager["DlsiteAPI"]):
-    """DLsite API session.
+class BaseAPI(AsyncContextManager["_T"]):
+    """Base DLsite API session.
 
     Args:
-        locale: Optional locale. Defaults to ``ja_JP``.
+        kwargs: Keyword args to pass into aiohttp.ClientSession.
     """
 
-    def __init__(self, locale: Optional[str] = None):
-        self.locale = locale
+    def __init__(self, **kwargs: Any):
         self._exit_stack = AsyncExitStack()
-        self.session = ClientSession(cookies={"adultchecked": "1"})
+        kwargs["raise_for_status"] = True
+        self.session = ClientSession(**kwargs)
         self._exit_stack.push_async_exit(self.session)
+        self._authed = False
 
     async def __aexit__(self, *args: Any) -> None:
         await self.close()
@@ -37,6 +42,66 @@ class DlsiteAPI(AsyncContextManager["DlsiteAPI"]):
         """Close this API session."""
         async with self._exit_stack:
             pass
+
+    def get(self, *args: Any, **kwargs: Any) -> _RequestContextManager:
+        """Perform get request."""
+        return self.session.get(*args, **kwargs)
+
+    def post(self, *args: Any, **kwargs: Any) -> _RequestContextManager:
+        """Perform post request."""
+        return self.session.post(*args, **kwargs)
+
+    async def login(
+        self,
+        login_id: Optional[str] = None,
+        password: Optional[str] = None,
+        netrc_host: str = "dlsite.com",
+    ) -> None:
+        """Login to DLsite.
+
+        Args:
+            login_id: DLsite login ID.
+            password: DLsite password.
+            netrc_host: Optional .netrc host. If `login_id` or `password` are
+                not set, they will be read from the specfied .netrc entry.
+
+        Raises:
+            AuthenticationError: Login failed.
+
+        Note:
+            Social media logins are unsupported.
+        """
+        if not login_id or not password:
+            authenticator = netrc().authenticators(netrc_host)
+            if authenticator is not None:
+                login_id, _, password = authenticator
+        if not login_id or not password:
+            raise AuthenticationError("DLsite login_id and password are required.")
+        url = "https://login.dlsite.com/login"
+        async with self.get(url, params={"user": "self"}) as response:
+            content = await response.text()
+            token = parse_login_token(content)
+        payload = {
+            "_token": token,
+            "login_id": login_id,
+            "password": password,
+        }
+        async with self.post(url, data=payload) as response:
+            if "ログイン中です" not in await response.text():
+                raise AuthenticationError("DLsite login failed.")
+        self._authed = True
+
+
+class DlsiteAPI(BaseAPI["DlsiteAPI"]):
+    """DLsite API session.
+
+    Args:
+        locale: Optional locale. Defaults to ``ja_JP``.
+    """
+
+    def __init__(self, locale: Optional[str] = None, **kwargs: Any):
+        super().__init__(cookies={"adultchecked": "1"})
+        self.locale = locale
 
     @property
     def _common_params(self) -> Dict[str, str]:
@@ -48,7 +113,7 @@ class DlsiteAPI(AsyncContextManager["DlsiteAPI"]):
             kwargs["params"].update(self._common_params)
         else:
             kwargs["params"] = self._common_params
-        return self.session.get(*args, **kwargs)
+        return super().get(*args, **kwargs)
 
     async def get_work(self, product_id: str) -> Work:
         """Return the specified work.

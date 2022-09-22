@@ -4,7 +4,7 @@ import unicodedata
 from abc import ABC, abstractmethod
 from datetime import date, datetime
 from html import unescape
-from typing import Any, Dict, Iterable, List, cast
+from typing import Any, Dict, Iterable, List, Optional, cast
 
 from lxml import html
 
@@ -162,3 +162,13 @@ def parse_circle_html(content: str) -> Dict[str, Any]:
         }
         return info
     raise ScrapingError("Failed to find maker name")
+
+
+def parse_login_token(content: str) -> str:
+    """Parse login form token."""
+    tree = html.fromstring(content)
+    for input_ in cast(html.HtmlElement, tree.xpath('.//input[@name="_token"]')):
+        token: Optional[str] = input_.get("value")
+        if token is not None:
+            return token
+    raise ScrapingError("Failed to find login form token.")
