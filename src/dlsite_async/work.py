@@ -1,8 +1,9 @@
 """DLsite work classes."""
+from collections.abc import Mapping
 from dataclasses import dataclass, fields
 from datetime import datetime
 from enum import Enum, IntEnum
-from typing import Any, List, Mapping, Optional
+from typing import Any, Optional
 
 
 class AgeCategory(IntEnum):
@@ -69,18 +70,18 @@ class Work:
     announce_date: Optional[datetime] = None
     modified_date: Optional[datetime] = None
     series: Optional[str] = None
-    scenario: Optional[List[str]] = None
-    illustration: Optional[List[str]] = None
-    voice_actor: Optional[List[str]] = None
-    author: Optional[List[str]] = None
-    music: Optional[List[str]] = None
-    writer: Optional[List[str]] = None
-    genre: Optional[List[str]] = None
+    scenario: Optional[list[str]] = None
+    illustration: Optional[list[str]] = None
+    voice_actor: Optional[list[str]] = None
+    author: Optional[list[str]] = None
+    music: Optional[list[str]] = None
+    writer: Optional[list[str]] = None
+    genre: Optional[list[str]] = None
     label: Optional[str] = None
-    event: Optional[List[str]] = None
-    file_format: Optional[List[str]] = None
+    event: Optional[list[str]] = None
+    file_format: Optional[list[str]] = None
     file_size: Optional[str] = None
-    language: Optional[List[str]] = None
+    language: Optional[list[str]] = None
     page_count: Optional[int] = None
 
     @classmethod

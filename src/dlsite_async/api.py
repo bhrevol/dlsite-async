@@ -1,9 +1,9 @@
 """DLsite API classes."""
-from contextlib import AsyncExitStack
+from contextlib import AbstractAsyncContextManager, AsyncExitStack
 from dataclasses import replace
 from datetime import datetime
 from netrc import netrc
-from typing import Any, AsyncContextManager, Dict, Optional, TypeVar
+from typing import Any, Optional, TypeVar
 
 from aiohttp import ClientSession
 from aiohttp.client import _RequestContextManager
@@ -21,7 +21,7 @@ def _datetime_from_timestamp(timestamp: str) -> datetime:
     return datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
 
 
-class BaseAPI(AsyncContextManager["_T"]):
+class BaseAPI(AbstractAsyncContextManager["_T"]):
     """Base DLsite API session.
 
     Args:
@@ -104,7 +104,7 @@ class DlsiteAPI(BaseAPI["DlsiteAPI"]):
         self.locale = locale
 
     @property
-    def _common_params(self) -> Dict[str, str]:
+    def _common_params(self) -> dict[str, str]:
         return {"locale": self.locale} if self.locale else {}
 
     def get(self, *args: Any, **kwargs: Any) -> _RequestContextManager:
