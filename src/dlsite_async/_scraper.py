@@ -4,7 +4,7 @@ import unicodedata
 from abc import ABC, abstractmethod
 from datetime import date, datetime
 from html import unescape
-from typing import Any, Dict, Iterable, List, Optional, cast
+from typing import Any, Iterable, Optional, cast
 
 from lxml import html
 
@@ -82,7 +82,7 @@ class _MakerRowParser(_RowParser):
 class _ListRowParser(_RowParser):
     """Item list row parser."""
 
-    def parse_value(self, td: html.HtmlElement) -> List[str]:
+    def parse_value(self, td: html.HtmlElement) -> list[str]:
         """Parse the specfied table cell value."""
         return [_unescape(a.text_content()) for a in td.xpath(".//a")]
 
@@ -120,10 +120,10 @@ _parsers = [
 ]
 
 
-def parse_work_html(content: str) -> Dict[str, Any]:
+def parse_work_html(content: str) -> dict[str, Any]:
     """Parse work HTML."""
     tree = html.fromstring(content)
-    info: Dict[str, Any] = {}
+    info: dict[str, Any] = {}
     for table in (
         '//table[@id="work_maker"]//tr',
         '//table[@id="work_outline"]//tr',
@@ -151,13 +151,13 @@ def _parse_work_outline_rows(trs: Iterable[html.HtmlElement]) -> Any:
             logger.debug(f"No matching parser for outline row: {tr}")
 
 
-def parse_circle_html(content: str) -> Dict[str, Any]:
+def parse_circle_html(content: str) -> dict[str, Any]:
     """Parse circle HTML."""
     tree = html.fromstring(content)
     for strong in tree.xpath(  # type: ignore[union-attr]
         '//strong[@class="prof_maker_name"]'
     ):
-        info: Dict[str, Any] = {
+        info: dict[str, Any] = {
             "maker_name": _unescape(cast(html.HtmlElement, strong).text_content())
         }
         return info

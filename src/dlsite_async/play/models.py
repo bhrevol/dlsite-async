@@ -1,22 +1,10 @@
 """Play API response models."""
 from abc import ABC
+from collections.abc import Mapping
 from dataclasses import dataclass, fields
 from datetime import datetime, timezone
 from functools import cached_property
-from typing import (
-    Any,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Mapping,
-    Optional,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import Any, Iterable, Iterator, Optional, Type, TypeVar, Union, cast
 
 from ..exceptions import DlsiteError
 
@@ -29,7 +17,7 @@ class _PlayModel(ABC):  # noqa: B024
     """Play API model."""
 
     @classmethod
-    def from_json(cls: Type[_PM], data: Dict[str, Any]) -> _PM:
+    def from_json(cls: Type[_PM], data: dict[str, Any]) -> _PM:
         """Construct a model from JSON response.
 
         Args:
@@ -52,7 +40,7 @@ class DownloadToken(_PlayModel):
     workno: str
 
     @classmethod
-    def from_json(cls, data: Dict[str, Any]) -> "DownloadToken":
+    def from_json(cls, data: dict[str, Any]) -> "DownloadToken":
         """Construct a DownloadToken from JSON response.
 
         Args:
@@ -80,7 +68,7 @@ class DownloadToken(_PlayModel):
         return int(self.expires_at.timestamp())
 
     @property
-    def params(self) -> Dict[str, Any]:
+    def params(self) -> dict[str, Any]:
         """Return query params dictionary."""
         return {
             "expiration": self.expiration,
@@ -94,7 +82,7 @@ class PlayFile(_PlayModel):
 
     length: int
     type: str
-    files: Dict[str, Any]
+    files: dict[str, Any]
 
     def __post_init__(self) -> None:
         object.__setattr__(self, self.type, self.files)
@@ -120,7 +108,7 @@ class PlayFile(_PlayModel):
         return cast(int, self.files["optimized"]["length"])
 
     @classmethod
-    def from_json(cls, data: Dict[str, Any]) -> "PlayFile":
+    def from_json(cls, data: dict[str, Any]) -> "PlayFile":
         """Construct a PlayFile from JSON response.
 
         Args:
@@ -146,12 +134,12 @@ class _TreeFile(_PlayModel):
 class _TreeFolder(_PlayModel):
     """ZipTree tree folder entry."""
 
-    children: List["_TreeEntry"]
+    children: list["_TreeEntry"]
     name: str
     path: str
 
     @classmethod
-    def from_json(cls, data: Dict[str, Any]) -> "_TreeFolder":
+    def from_json(cls, data: dict[str, Any]) -> "_TreeFolder":
         """Construct a ZipTree from JSON response.
 
         Args:
@@ -167,7 +155,7 @@ class _TreeFolder(_PlayModel):
 _TreeEntry = Union[_TreeFile, _TreeFolder]
 
 
-def _tree_entry(data: Dict[str, Any]) -> _TreeEntry:
+def _tree_entry(data: dict[str, Any]) -> _TreeEntry:
     if data["type"] == "file":
         return _TreeFile.from_json(data)
     if data["type"] == "folder":
@@ -189,11 +177,11 @@ class ZipTree(_PlayModel, Mapping[str, PlayFile]):
     """
 
     hash: str
-    playfile: Dict[str, PlayFile]
-    tree: List[_TreeEntry]
+    playfile: dict[str, PlayFile]
+    tree: list[_TreeEntry]
 
     @classmethod
-    def from_json(cls, data: Dict[str, Any]) -> "ZipTree":
+    def from_json(cls, data: dict[str, Any]) -> "ZipTree":
         """Construct a ZipTree from JSON response.
 
         Args:
@@ -217,12 +205,12 @@ class ZipTree(_PlayModel, Mapping[str, PlayFile]):
         return cls(hash=hash, playfile=playfile, tree=tree)
 
     @cached_property
-    def _dict(self) -> Dict[str, PlayFile]:
+    def _dict(self) -> dict[str, PlayFile]:
         return {path: playfile for path, playfile in self._walk(self.tree)}
 
     def _walk(
         self, entries: Iterable[_TreeEntry], parent: Optional[str] = None
-    ) -> Iterator[Tuple[str, PlayFile]]:
+    ) -> Iterator[tuple[str, PlayFile]]:
         for entry in entries:
             if isinstance(entry, _TreeFile):
                 path = "/".join([parent, entry.name]) if parent else entry.name

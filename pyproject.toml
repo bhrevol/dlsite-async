@@ -16,7 +16,7 @@ classifiers = [
 Changelog = "https://github.com/bhrevol/dlsite-async/releases"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.9"
 lxml = "^4.9.1"
 aiohttp = "^3.8.1"
 
