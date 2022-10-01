@@ -5,7 +5,7 @@ from datetime import datetime
 from netrc import netrc
 from typing import Any, Optional, TypeVar
 
-from aiohttp import ClientSession
+from aiohttp import ClientSession, ClientTimeout
 from aiohttp.client import _RequestContextManager
 
 from ._scraper import parse_circle_html, parse_login_token, parse_work_html
@@ -27,6 +27,14 @@ class BaseAPI(AbstractAsyncContextManager["_T"]):
     Args:
         kwargs: Keyword args to pass into aiohttp.ClientSession.
     """
+
+    _DL_CHUNK_SIZE = 1024 * 1024
+    _DL_TIMEOUT = ClientTimeout(
+        total=None,
+        connect=300,
+        sock_connect=None,
+        sock_read=None,
+    )
 
     def __init__(self, **kwargs: Any):
         self._exit_stack = AsyncExitStack()
