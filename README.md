@@ -33,6 +33,16 @@
 - Japanese and English locale support
   (English metadata may not be available for all works)
 
+- Async DLsite Play API
+- Supports downloading web-optimized versions of works from DLsite Play
+  - Downloads require valid DLsite account login (only purchased works can be
+    downloaded)
+  - Only `optimized` file versions can be downloaded
+  - Images may be resized to smaller resolution and compressed
+  - Audio files may be re-encoded and compressed into MP3 format
+- Supports de-scrambling downloaded images (from book type works)
+  - Image de-scrambling requires installation with `dlsite-async[pil]`
+
 ## Requirements
 
 - Python 3.9+
@@ -43,6 +53,12 @@ You can install _DLsite Async_ via [pip] from [PyPI]:
 
 ```console
 $ pip install dlsite-async
+```
+
+Certain features require may installing extra dependencies:
+
+```console
+$ pip install dlsite-async[pil]
 ```
 
 ## Usage examples

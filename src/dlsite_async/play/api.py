@@ -7,6 +7,7 @@ from typing import Any, Union
 
 from ..api import BaseAPI
 from .models import DownloadToken, PlayFile, ZipTree
+from .scramble import descramble as _descramble
 
 
 logger = logging.getLogger(__name__)
@@ -61,7 +62,6 @@ class PlayAPI(BaseAPI["PlayAPI"]):
         mkdir: bool = False,
         force: bool = False,
         descramble: bool = False,
-        **kwargs: Any,
     ) -> None:
         """Download playfile to the specified location.
 
@@ -106,10 +106,10 @@ class PlayAPI(BaseAPI["PlayAPI"]):
                 temp.close()
                 os.remove(temp)
                 raise
+        os.replace(temp.name, dest)
         if (
             playfile.type == "image"
             and playfile.files["optimized"].get("crypt")
             and descramble
         ):
-            pass
-        os.replace(temp.name, dest)
+            _descramble(dest, playfile)

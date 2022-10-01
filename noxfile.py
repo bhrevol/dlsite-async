@@ -149,7 +149,7 @@ def safety(session: Session) -> None:
 def mypy(session: Session) -> None:
     """Type-check using mypy."""
     args = session.posargs or ["src", "tests", "docs/conf.py"]
-    session.install(".")
+    session.install(".[pil]")
     session.install(
         "aioresponses",
         "lxml-stubs",
@@ -157,6 +157,7 @@ def mypy(session: Session) -> None:
         "pytest",
         "pytest-asyncio",
         "pytest-mock",
+        "types-pillow",
     )
     session.run("mypy", *args)
     if not session.posargs:
@@ -166,7 +167,7 @@ def mypy(session: Session) -> None:
 @session(python=python_versions)
 def tests(session: Session) -> None:
     """Run the test suite."""
-    session.install(".")
+    session.install(".[pil]")
     session.install(
         "aioresponses",
         "coverage[toml]",
@@ -198,7 +199,7 @@ def coverage(session: Session) -> None:
 @session(python=python_versions[0])
 def typeguard(session: Session) -> None:
     """Runtime type checking using Typeguard."""
-    session.install(".")
+    session.install(".[pil]")
     session.install(
         "aioresponses",
         "pygments",
