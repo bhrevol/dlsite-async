@@ -46,7 +46,7 @@ You need Python 3.8+ and the following tools:
 Install the package with development requirements:
 
 ```console
-$ poetry install
+$ poetry install --all-extras
 ```
 
 You can now run an interactive Python session,
