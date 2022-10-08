@@ -12,6 +12,38 @@
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
       "automerge": true,
       "automergeType": "pr"
+    },
+    {
+      "matchPackagePatterns": ["furo", "sphinx", "xdoctest", "myst-parser"],
+      "groupName": "docs",
+      "extends": ["schedule:weekly"]
+    },
+    {
+      "matchPackagePatterns": [
+        "black",
+        "flake8",
+        "isort",
+        "pep8",
+        "pre-commit",
+        "pyupgrade"
+      ],
+      "groupName": "pre-commit",
+      "extends": ["schedule:weekly"]
+    },
+    {
+      "matchPackagePatterns": [
+        "Pygments",
+        "coverage",
+        "pytest",
+        "aioresponses"
+      ],
+      "groupName": "tests",
+      "extends": ["schedule:weekly"]
+    },
+    {
+      "matchPackagePatterns": ["mypy", "stubs", "safety", "typeguard"],
+      "groupName": "types",
+      "extends": ["schedule:weekly"]
     }
   ],
   "automergeStrategy": "rebase",
