@@ -7,6 +7,7 @@ from html import unescape
 from typing import Any, Iterable, Optional, cast
 
 from lxml import html
+from lxml.html import soupparser
 
 from .exceptions import ScrapingError
 
@@ -122,7 +123,7 @@ _parsers = [
 
 def parse_work_html(content: str) -> dict[str, Any]:
     """Parse work HTML."""
-    tree = html.fromstring(content)
+    tree = html.soupparser.fromstring(content)
     info: dict[str, Any] = {}
     for table in (
         '//table[@id="work_maker"]//tr',
@@ -153,10 +154,8 @@ def _parse_work_outline_rows(trs: Iterable[html.HtmlElement]) -> Any:
 
 def parse_circle_html(content: str) -> dict[str, Any]:
     """Parse circle HTML."""
-    tree = html.fromstring(content)
-    for strong in tree.xpath(  # type: ignore[union-attr]
-        '//strong[@class="prof_maker_name"]'
-    ):
+    tree = soupparser.fromstring(content)
+    for strong in tree.xpath('//strong[@class="prof_maker_name"]'):
         info: dict[str, Any] = {
             "maker_name": _unescape(cast(html.HtmlElement, strong).text_content())
         }
@@ -166,7 +165,7 @@ def parse_circle_html(content: str) -> dict[str, Any]:
 
 def parse_login_token(content: str) -> str:
     """Parse login form token."""
-    tree = html.fromstring(content)
+    tree = soupparser.fromstring(content)
     for input_ in cast(html.HtmlElement, tree.xpath('.//input[@name="_token"]')):
         token: Optional[str] = input_.get("value")
         if token is not None:
