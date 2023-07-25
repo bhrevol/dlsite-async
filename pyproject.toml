@@ -24,38 +24,38 @@ beautifulsoup4 = "^4.11.1"
 
 [tool.poetry.dev-dependencies]
 Pygments = ">=2.10.0"
-black = ">=21.10b0"
 coverage = {extras = ["toml"], version = ">=6.2"}
-darglint = ">=1.8.1"
-flake8 = ">=4.0.1"
-flake8-bandit = ">=2.1.2"
-flake8-bugbear = ">=21.9.2"
-flake8-docstrings = ">=1.6.0"
-flake8-rst-docstrings = ">=0.2.5"
 furo = ">=2021.11.12"
-isort = ">=5.10.1"
-mypy = ">=0.930"
-pep8-naming = ">=0.12.1"
-pre-commit = ">=2.16.0"
-pre-commit-hooks = ">=4.1.0"
-pytest = ">=6.2.5"
-pyupgrade = ">=2.29.1"
-safety = ">=1.10.3"
 sphinx = ">=4.3.2"
 sphinx-autobuild = ">=2021.3.14"
 typeguard = ">=2.13.3"
 xdoctest = {extras = ["colors"], version = ">=0.15.10"}
 myst-parser = {version = ">=0.16.1"}
-lxml-stubs = "^0.4.0"
-pytest-asyncio = "^0.19.0"
-pytest-mock = "^3.8.2"
-aioresponses = "^0.7.3"
 
 [tool.poetry.extras]
 pil = ["Pillow"]
 
 [tool.poetry.group.dev.dependencies]
 types-Pillow = "^9.2.2"
+safety = "^2.3.5"
+black = "^23.7.0"
+flake8 = "^6.0.0"
+flake8-bandit = "^4.1.1"
+flake8-bugbear = "^23.7.10"
+flake8-docstrings = "^1.7.0"
+flake8-rst-docstrings = "^0.3.0"
+pre-commit = "^3.3.3"
+pre-commit-hooks = "^4.4.0"
+pep8-naming = "^0.13.3"
+isort = "^5.12.0"
+pyupgrade = "^3.9.0"
+darglint = "^1.8.1"
+mypy = "^1.4.1"
+lxml-stubs = "^0.4.0"
+pytest = "^7.4.0"
+pytest-asyncio = "^0.19.0"
+pytest-mock = "^3.8.2"
+aioresponses = "^0.7.3"
 
 [tool.bandit]
 skips = ["B320"]
