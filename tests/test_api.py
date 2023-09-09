@@ -192,7 +192,7 @@ async def test_locale(mocker: MockerFixture) -> None:
 
 async def test_product_info(api: DlsiteAPI) -> None:
     """Ajax API info should be filled."""
-    with aioresponses() as m:  # type: ignore[no-untyped-call]
+    with aioresponses() as m:
         m.get(
             _URL_PATTERN,
             payload=_TEST_INFO,
@@ -204,7 +204,7 @@ async def test_product_info(api: DlsiteAPI) -> None:
 async def test_fill_work_details(api: DlsiteAPI) -> None:
     """Full product info should be filled."""
     work = copy(_TEST_INFO_WORK)
-    with aioresponses() as m:  # type: ignore[no-untyped-call]
+    with aioresponses() as m:
         m.get(
             _URL_PATTERN,
             body=_WORK_TEST_HTML,
@@ -215,7 +215,7 @@ async def test_fill_work_details(api: DlsiteAPI) -> None:
 
 async def test_get_circle(api: DlsiteAPI) -> None:
     """Full circle info should be filled."""
-    with aioresponses() as m:  # type: ignore[no-untyped-call]
+    with aioresponses() as m:
         m.get(
             _URL_PATTERN,
             body=_CIRCLE_TEST_HTML,

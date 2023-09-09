@@ -130,7 +130,7 @@ async def test_playfile() -> None:
 
 async def test_download_token(play_api: PlayAPI) -> None:
     """Download token should be returned."""
-    with aioresponses() as m:  # type: ignore[no-untyped-call]
+    with aioresponses() as m:
         m.get(
             _URL_PATTERN,
             payload=_TEST_DOWNLOAD_TOKEN_JSON,
@@ -141,7 +141,7 @@ async def test_download_token(play_api: PlayAPI) -> None:
 async def test_ziptree(play_api: PlayAPI) -> None:
     """Ziptree should be returned."""
     token = _TEST_DOWNLOAD_TOKEN
-    with aioresponses() as m:  # type: ignore[no-untyped-call]
+    with aioresponses() as m:
         m.get(
             _URL_PATTERN,
             payload=_TEST_ZIPTREE_JSON,

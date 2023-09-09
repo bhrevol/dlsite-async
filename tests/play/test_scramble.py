@@ -42,7 +42,7 @@ def test_descramble(tmp_path: Path) -> None:
     )
     descramble(image_file, playfile)
     with Image.open(image_file) as im:
-        px = im.load()  # type: ignore
+        px = im.load()
         assert px[0, 0] == (0, 0, 0)
         assert px[0, 128] == (0, 0, 255)
         assert px[128, 0] == (255, 0, 0)
