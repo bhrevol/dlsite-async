@@ -2,7 +2,7 @@
 import logging
 import unicodedata
 from abc import ABC, abstractmethod
-from datetime import date, datetime
+from datetime import datetime
 from html import unescape
 from typing import Any, Iterable, Optional, cast
 
@@ -41,16 +41,16 @@ class _RowParser(ABC):
 class _DateRowParser(_RowParser):
     """Date row parser."""
 
-    def parse_value(self, td: html.HtmlElement) -> date:
+    def parse_value(self, td: html.HtmlElement) -> datetime:
         """Parse the specfied table cell value."""
         value = cast(str, super().parse_value(td))
-        return self._to_date(value.split()[0])
+        return self._to_datetime(value.split()[0])
 
     @staticmethod
-    def _to_date(value: str) -> date:
+    def _to_datetime(value: str) -> datetime:
         for fmt in ("%Y年%m月%d日", "%b/%d/%Y", "%B/%d/%Y"):
             try:
-                return datetime.strptime(value, fmt).date()
+                return datetime.strptime(value, fmt)
             except ValueError:  # pragma: no cover
                 pass
         raise ScrapingError(f"Failed to parse date string {value}")

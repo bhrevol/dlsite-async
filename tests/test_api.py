@@ -2,7 +2,7 @@
 import re
 from copy import copy
 from dataclasses import fields, replace
-from datetime import date, datetime
+from datetime import datetime
 
 from aioresponses import aioresponses
 from pytest_mock import MockerFixture
@@ -38,7 +38,7 @@ _TEST_INFO_WORK = Work(
 )
 _TEST_HTML_WORK = replace(
     _TEST_INFO_WORK,
-    modified_date=date(2022, 1, 1),
+    modified_date=datetime(2022, 1, 1, 0, 0, 0),
     page_count=123,
     circle="Test Circle",
     voice_actor=["Test Seiyuu 1", "Test Seiyuu 2"],
