@@ -1,5 +1,6 @@
 """HTML scraper."""
 import logging
+import re
 import unicodedata
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -18,6 +19,24 @@ logger = logging.getLogger()
 def _unescape(content: str) -> str:
     """Return unescaped and normalized HTML content."""
     return unicodedata.normalize("NFKC", unescape(content)).strip()
+
+
+_INVALID_XML_RANGES = [
+    f"{chr(low)}-{chr(high)}"
+    for low, high in [
+        (0x00, 0x08),
+        (0x0B, 0x0C),
+        (0x0E, 0x1F),
+        (0x7F, 0x84),
+        (0x86, 0x9F),
+    ]
+]
+_INVALID_XML_RE = re.compile("[{}]".format("".join(_INVALID_XML_RANGES)))
+
+
+def _clean_xml(content: str) -> str:
+    """Strip invalid XML characters from HTML content."""
+    return _INVALID_XML_RE.sub("", content)
 
 
 class _RowParser(ABC):
@@ -123,7 +142,7 @@ _parsers = [
 
 def parse_work_html(content: str) -> dict[str, Any]:
     """Parse work HTML."""
-    tree = html.soupparser.fromstring(content)
+    tree = soupparser.fromstring(_clean_xml(content))
     info: dict[str, Any] = {}
     for table in (
         '//table[@id="work_maker"]//tr',
@@ -154,7 +173,7 @@ def _parse_work_outline_rows(trs: Iterable[html.HtmlElement]) -> Any:
 
 def parse_circle_html(content: str) -> dict[str, Any]:
     """Parse circle HTML."""
-    tree = soupparser.fromstring(content)
+    tree = soupparser.fromstring(_clean_xml(content))
     for strong in tree.xpath('//strong[@class="prof_maker_name"]'):
         info: dict[str, Any] = {
             "maker_name": _unescape(cast(html.HtmlElement, strong).text_content())
@@ -165,7 +184,7 @@ def parse_circle_html(content: str) -> dict[str, Any]:
 
 def parse_login_token(content: str) -> str:
     """Parse login form token."""
-    tree = soupparser.fromstring(content)
+    tree = soupparser.fromstring(_clean_xml(content))
     for input_ in cast(html.HtmlElement, tree.xpath('.//input[@name="_token"]')):
         token: Optional[str] = input_.get("value")
         if token is not None:
