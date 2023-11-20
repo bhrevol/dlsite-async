@@ -37,7 +37,7 @@ pil = ["Pillow"]
 
 [tool.poetry.group.dev.dependencies]
 types-Pillow = "^9.2.2"
-safety = "^2.3.5"
+safety = "^2.4.0-beta"
 black = "^23.7.0"
 flake8 = "^6.0.0"
 flake8-bandit = "^4.1.1"
