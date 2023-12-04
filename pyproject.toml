@@ -53,7 +53,7 @@ darglint = "^1.8.1"
 mypy = "^1.4.1"
 lxml-stubs = "^0.4.0"
 pytest = "^7.4.0"
-pytest-asyncio = "^0.21.0"
+pytest-asyncio = "^0.23.0"
 pytest-mock = "^3.8.2"
 aioresponses = "^0.7.3"
 
