@@ -80,9 +80,12 @@ class BaseAPI(AbstractAsyncContextManager["_T"]):
             Social media logins are unsupported.
         """
         if not login_id or not password:
-            authenticator = netrc().authenticators(netrc_host)
-            if authenticator is not None:
-                login_id, _, password = authenticator
+            try:
+                authenticator = netrc().authenticators(netrc_host)
+                if authenticator is not None:
+                    login_id, _, password = authenticator
+            except FileNotFoundError:
+                pass
         if not login_id or not password:
             raise AuthenticationError("DLsite login_id and password are required.")
         url = "https://login.dlsite.com/login"
