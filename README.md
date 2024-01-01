@@ -40,6 +40,9 @@
   - Only `optimized` file versions can be downloaded
   - Images may be resized to smaller resolution and compressed
   - Audio files may be re-encoded and compressed into MP3 format
+  - Video files may be resized to smaller resolution and re-encoded
+  - Play API returns an m3u8 HLS stream playlist for videos. Downloading the
+    HLS video segments is not supported.
 - Supports de-scrambling downloaded images (from book type works)
   - Image de-scrambling requires installation with `dlsite-async[pil]`
 
@@ -126,6 +129,114 @@ Work(
     file_size='Total 010.63GB',
     ...
 )
+```
+
+List DLsite Play files in a work:
+
+```py
+>>> from dlsite_async import PlayAPI
+>>> async def f():
+...     async with PlayAPI() as play_api:
+...         await play_api.login("username", "password")
+...         token = await play_api.download_token("RJ294126")
+...         tree = await play_api.ziptree(token)
+...         return dict(tree.items())
+...
+>>> asyncio.run(f())
+{
+    '純愛おま○こ当番【アップデート版】/readme.txt': PlayFile(
+        length=4006,
+        type='text',
+        files={
+            'optimized': {
+                'encoding': 'UTF-8',
+                'length': 5232,
+                'name': '95b8dd8e45a2ff0b1d45717b93a096b7.txt',
+                'size': '5.1KB'
+            }
+        }
+    ),
+    ...,
+    '純愛おま○こ当番【アップデート版】/02_wav/track00_タイトルコール.wav' PlayFile(
+        length=5193978,
+        type='audio',
+        files={
+            'optimized': {
+                'bit_rate': 74182,
+                'duration': 6.768,
+                'length': 62758,
+                'name': '069498e95c11ad47fc65ee87a1a0ae60.mp3',
+                'size': '61.3KB'
+            }
+        }
+    ),
+    ...,
+    '純愛おま○こ当番【アップデート版】/04_omake/01：高画質画像/junai_r_01.jpg': PlayFile(
+        length=1394068,
+        type='image',
+        files={
+            'files': {
+                'crypt': False,
+                'height': 3000,
+                'length': 1394068,
+                'name': 'd0b8bc7a93e4f1c4c3d5e3eed6d65393.jpg',
+                'size': '1.3MB',
+                'width': 2143
+            },
+            'optimized': {
+                'crypt': True,
+                'height': 1280,
+                'length': 220746,
+                'name': 'd0b8bc7a93e4f1c4c3d5e3eed6d65393.jpg',
+                'size': '215.6KB',
+                'width': 914
+            }
+        }
+    ),
+    ...,
+    '純愛おま○こ当番【アップデート版】/05_字幕付き音声動画/trackEX_おま○こ当番と体育倉庫でナイショえっち.mp4': PlayFile(
+        length=297495132,
+        type='video',
+        files={
+            'files': {
+                'frame_rate': '24/1',
+                'height': 1080,
+                'width': 1920
+            },
+            'optimized': {
+                'duration': '1004.693333',
+                'name': 'd5e47f10d9d98944f6d4003497087c53.m3u8',
+                'streams': ['v720p', 'v480p', 'v240p']
+            }
+        }
+    ),
+    ...,
+}
+```
+
+Download web-optimized images from a manga/comic work to the current working directory
+(Note that using `descramble=True` requires `dlsite_async[pil]`):
+
+```py
+>>> import os
+>>> import asyncio
+>>> from dlsite_async import PlayAPI
+>>> async def f():
+...     async with PlayAPI() as play_api:
+...         await play_api.login(username, password)
+...         token = await play_api.download_token("BJ277832")
+...         tree = await play_api.ziptree(token)
+...         for filename, playfile in tree.items():
+...             if playfile.type != "image":
+...                 continue
+...             orig_path, _ = os.path.splitext(filename)
+...             _, ext = os.path.splitext(playfile.optimized_name)
+...             dest = f"{orig_path}{ext}"
+...             await play_api.download_playfile(
+...                 token, playfile, dest, mkdir=True, descramble=True
+...             )
+...
+>>> asyncio.run(f())
 ```
 
 ## Contributing
