@@ -18,7 +18,7 @@ class PlayAPI(BaseAPI["PlayAPI"]):
 
     async def login(self, *args: Any, **kwargs: Any) -> None:
         """Login to DLsite Play."""
-        await super().login()
+        await super().login(*args, **kwargs)
         url = "https://play.dlsite.com/login/"
         async with self.get(url) as response:
             await response.read()
