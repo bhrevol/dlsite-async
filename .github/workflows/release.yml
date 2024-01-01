@@ -39,11 +39,11 @@ jobs:
           pdm build
 
       - name: Publish package on PyPI
-        if: ${{ github.event_name == "release" && github.event.action == "published" }}
+        if: github.event_name == "release" && github.event.action == "published"
         run: |
           pdm publish --no-build
 
       - name: Publish package on TestPyPI
-        if: ${{ github.event_name != "release" }}
+        if: github.event_name != "release"
         run: |
           pdm publish --no-build --repository testpypi
