@@ -149,6 +149,10 @@ def parse_work_html(content: str) -> dict[str, Any]:
         '//table[@id="work_outline"]//tr',
     ):
         info.update(_parse_work_outline_rows(cast(html.HtmlElement, tree.xpath(table))))
+    for div in ('//div[@class="product-slider-data"]//div',):
+        (info.update(_parse_work_slider_data(cast(html.HtmlElement, tree.xpath(div)))),)
+    for meta in tree.xpath('//meta[@name="description"]'):
+        info.update(_parse_work_description(cast(html.HtmlElement, meta)))
     return info
 
 
@@ -169,6 +173,28 @@ def _parse_work_outline_rows(trs: Iterable[html.HtmlElement]) -> Any:
                 break
         else:
             logger.debug(f"No matching parser for outline row: {tr}")
+
+
+def _parse_work_slider_data(divs: Iterable[html.HtmlElement]) -> Any:
+    images = []
+    for div in divs:
+        src = div.get("data-src")
+        if src and "_img_main" not in src:
+            images.append(src)
+    return {"sample_images": images} if images else {}
+
+
+_DESC_EN = re.compile(r'"DLsite.*DLsite!$')
+_DESC_JP = re.compile(r"「DLsite[^」]*」.*「DLsite[^」]*」!$")
+
+
+def _parse_work_description(meta: html.HtmlElement) -> Any:
+    content = meta.get("content")
+    if content:
+        content = _unescape(content)
+        content = _DESC_EN.sub("", content).strip()
+        content = _DESC_JP.sub("", content).strip()
+    return {"description": content} if content else {}
 
 
 def parse_circle_html(content: str) -> dict[str, Any]:
