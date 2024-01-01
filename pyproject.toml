@@ -1,62 +1,3 @@
-[tool.poetry]
-name = "dlsite-async"
-version = "0.2.1"
-description = "DLsite Async"
-authors = ["byeonhyeok <bhrevol@gmail.com>"]
-license = "MIT"
-readme = "README.md"
-homepage = "https://github.com/bhrevol/dlsite-async"
-repository = "https://github.com/bhrevol/dlsite-async"
-documentation = "https://dlsite-async.readthedocs.io"
-classifiers = [
-    "Development Status :: 4 - Beta",
-]
-
-[tool.poetry.urls]
-Changelog = "https://github.com/bhrevol/dlsite-async/releases"
-
-[tool.poetry.dependencies]
-python = "^3.9"
-lxml = "^4.9.1"
-aiohttp = "^3.8.1"
-Pillow = {version = "^10.0.0", optional = true}
-beautifulsoup4 = "^4.11.1"
-
-[tool.poetry.dev-dependencies]
-Pygments = ">=2.10.0"
-coverage = {extras = ["toml"], version = ">=6.2"}
-furo = ">=2021.11.12"
-sphinx = ">=4.3.2"
-sphinx-autobuild = ">=2021.3.14"
-typeguard = ">=2.13.3"
-xdoctest = {extras = ["colors"], version = ">=0.15.10"}
-myst-parser = {version = ">=0.16.1"}
-
-[tool.poetry.extras]
-pil = ["Pillow"]
-
-[tool.poetry.group.dev.dependencies]
-types-Pillow = "^9.2.2"
-safety = "^2.4.0-beta"
-black = "^23.7.0"
-flake8 = "^6.0.0"
-flake8-bandit = "^4.1.1"
-flake8-bugbear = "^23.7.10"
-flake8-docstrings = "^1.7.0"
-flake8-rst-docstrings = "^0.3.0"
-pre-commit = "^3.3.3"
-pre-commit-hooks = "^4.4.0"
-pep8-naming = "^0.13.3"
-isort = "^5.12.0"
-pyupgrade = "^3.9.0"
-darglint = "^1.8.1"
-mypy = "^1.4.1"
-lxml-stubs = "^0.4.0"
-pytest = "^7.4.0"
-pytest-asyncio = "^0.23.0"
-pytest-mock = "^3.8.2"
-aioresponses = "^0.7.3"
-
 [tool.bandit]
 skips = ["B320"]
 
@@ -88,6 +29,83 @@ show_error_context = true
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 
+
+[tool.pdm]
+[tool.pdm.dev-dependencies]
+coverage = [
+    "coverage[toml]>=7.4.0"
+]
+dev = [
+    "nox>=2023.4.22",
+]
+docs = [
+    "furo>=2023.9.10",
+    "myst-parser>=2.0.0",
+    "sphinx>=7.2.6",
+    "sphinx-click>=5.1.0",
+]
+lint = [
+    "pre-commit>=3.6.0"
+]
+mypy = [
+    "mypy>=1.8.0"
+]
+tests = [
+    "aioresponses<1.0.0,>=0.7.3",
+    "lxml-stubs<1.0.0,>=0.4.0",
+    "pygments>=2.17.2",
+    "pytest>=7.4.3",
+    "pytest-asyncio<1.0.0,>=0.21.0",
+    "pytest-mock<4.0.0,>=3.8.2",
+    "types-Pillow<11.0.0,>=10.0.0",
+]
+safety = [
+    "safety>=2.3.5"
+]
+typeguard = [
+    "typeguard>=4.1.5",
+]
+xdoctest = [
+    "xdoctest[colors]>=1.1.2",
+]
+
+[tool.pdm.build]
+includes = []
+
+[tool.pdm.version]
+source = "scm"
+
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+
+[project]
+authors = [
+    {name = "byeonhyeok", email = "bhrevol@gmail.com"},
+]
+license = {text = "MIT"}
+requires-python = ">=3.9,<4.0"
+dependencies = [
+    "lxml<5.0.0,>=4.9.1",
+    "aiohttp<4.0.0,>=3.8.1",
+    "beautifulsoup4<5.0.0,>=4.11.1",
+]
+name = "dlsite-async"
+description = "DLsite Async"
+readme = "README.md"
+classifiers = [
+    "Development Status :: 4 - Beta",
+]
+dynamic = ["version"]
+
+[project.urls]
+Changelog = "https://github.com/bhrevol/dlsite-async/releases"
+homepage = "https://github.com/bhrevol/dlsite-async"
+repository = "https://github.com/bhrevol/dlsite-async"
+documentation = "https://dlsite-async.readthedocs.io"
+
+[project.optional-dependencies]
+pil = [
+    "Pillow<11.0.0,>=10.0.0",
+]
