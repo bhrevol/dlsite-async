@@ -938,7 +938,7 @@ files = [
 
 [[package]]
 name = "nox"
-version = "2023.4.22"
+version = "2024.3.2"
 requires_python = ">=3.7"
 summary = "Flexible test automation."
 groups = ["dev"]
@@ -946,11 +946,11 @@ dependencies = [
     "argcomplete<4.0,>=1.9.4",
     "colorlog<7.0.0,>=2.6.1",
     "packaging>=20.9",
-    "virtualenv>=14",
+    "virtualenv>=20.14.1",
 ]
 files = [
-    {file = "nox-2023.4.22-py3-none-any.whl", hash = "sha256:0b1adc619c58ab4fa57d6ab2e7823fe47a32e70202f287d78474adcc7bda1891"},
-    {file = "nox-2023.4.22.tar.gz", hash = "sha256:46c0560b0dc609d7d967dc99e22cb463d3c4caf54a5fda735d6c11b5177e3a9f"},
+    {file = "nox-2024.3.2-py3-none-any.whl", hash = "sha256:e53514173ac0b98dd47585096a55572fe504fecede58ced708979184d05440be"},
+    {file = "nox-2024.3.2.tar.gz", hash = "sha256:f521ae08a15adbf5e11f16cb34e8d0e6ea521e0b92868f684e91677deb974553"},
 ]
 
 [[package]]
