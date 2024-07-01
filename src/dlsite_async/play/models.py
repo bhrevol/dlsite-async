@@ -104,7 +104,7 @@ class PlayFile(_PlayModel):
             A new PlayFile.
         """
         type_ = data["type"]
-        files = data[type_]
+        files = data.get(type_, {})
         return cls(data["length"], data["type"], files)
 
 
@@ -114,6 +114,11 @@ class _TreeFile(_PlayModel):
 
     hashname: str
     name: str
+
+
+@dataclass(frozen=True)
+class _HiddenFile(_TreeFile):
+    "ZipTree hidden file entry." ""
 
 
 @dataclass(frozen=True)
@@ -138,7 +143,7 @@ class _TreeFolder(_PlayModel):
         return cls(children, data["name"], data["path"])
 
 
-_TreeEntry = Union[_TreeFile, _TreeFolder]
+_TreeEntry = Union[_TreeFile, _TreeFolder, _HiddenFile]
 
 
 def _tree_entry(data: dict[str, Any]) -> _TreeEntry:
@@ -146,6 +151,8 @@ def _tree_entry(data: dict[str, Any]) -> _TreeEntry:
         return _TreeFile.from_json(data)
     if data["type"] == "folder":
         return _TreeFolder.from_json(data)
+    if data["type"] == "hidden":
+        return _HiddenFile.from_json(data)
     raise DlsiteError(  # pragma: no cover
         f"Unsupported ziptree entry type: {data['type']}"
     )

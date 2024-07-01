@@ -88,7 +88,7 @@ class PlayAPI(BaseAPI["PlayAPI"]):
             )
             return
         if mkdir and not dest.parent.exists():
-            dest.parent.mkdir()
+            dest.parent.mkdir(parents=True)
         if not force and dest.exists():
             raise FileExistsError(str(dest))
         async with self.get(url, timeout=self._DL_TIMEOUT) as response:
