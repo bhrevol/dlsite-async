@@ -2,7 +2,7 @@
 from abc import ABC
 from collections.abc import Mapping
 from dataclasses import dataclass, fields
-from datetime import datetime, timezone
+from datetime import datetime
 from functools import cached_property
 from typing import Any, Iterable, Iterator, Optional, Type, TypeVar, Union, cast
 
@@ -34,10 +34,8 @@ class _PlayModel(ABC):  # noqa: B024
 class DownloadToken(_PlayModel):
     """Play API download token."""
 
-    token: str
     expires_at: datetime
     url: str
-    workno: str
 
     @classmethod
     def from_json(cls, data: dict[str, Any]) -> "DownloadToken":
@@ -53,11 +51,7 @@ class DownloadToken(_PlayModel):
             DlsiteError: An error occured.
         """
         try:
-            params = data["params"]
-            data["token"] = params["token"]
-            data["expires_at"] = datetime.fromtimestamp(
-                params["expiration"], tz=timezone.utc
-            )
+            data["expires_at"] = datetime.fromisoformat(data["expires"])
             return super().from_json(data)
         except KeyError as e:  # pragma: no cover
             raise DlsiteError("Got unexpected download_token data.") from e
@@ -66,14 +60,6 @@ class DownloadToken(_PlayModel):
     def expiration(self) -> int:
         """Return expiration as POSIX timestamp."""
         return int(self.expires_at.timestamp())
-
-    @property
-    def params(self) -> dict[str, Any]:
-        """Return query params dictionary."""
-        return {
-            "expiration": self.expiration,
-            "token": self.token,
-        }
 
 
 @dataclass(frozen=True)
