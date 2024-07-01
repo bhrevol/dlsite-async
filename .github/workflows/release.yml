@@ -26,12 +26,12 @@ jobs:
 
       - name: Upgrade pip
         run: |
-          pip install --constraint=.github/workflows/constraints.txt pip
+          pip install --constraint=${{ github.workspace }}/.github/workflows/constraints.txt pip
           pip --version
 
       - name: Install PDM
         run: |
-          pipx install --pip-args=--constraint=.github/workflows/constraints.txt pdm
+          pipx install --pip-args=--constraint=${{ github.workspace }}/.github/workflows/constraints.txt pdm
           pdm --version
 
       - name: Build package
