@@ -18,19 +18,17 @@ _URL_PATTERN = re.compile(r"^https://play(\.dl)?\.dlsite\.com")
 
 _TEST_WORKNO = "RJ123456"
 _TEST_DOWNLOAD_TOKEN_JSON = {
-    "workno": _TEST_WORKNO,
     "url": "https://play.dl.dlsite.com/content/work/doujin/RJ123000/RJ123456/",
-    "params": {
-        "token": "1664008921_abcdef",
-        "expiration": 1664008921,
+    "cookies": {
+        "CloudFront-Policy": "abcd1234",
+        "CloudFront-Signature": "abcd1234",
+        "CloudFront-Key-Pair-Id": "ABCD1234",
     },
-    "expires_at": "Sat, 24 Sep 2022 17:42:01 +0900",
+    "expires": "2022-09-24T17:42:01+0900",
 }
 _TEST_DOWNLOAD_TOKEN = DownloadToken(  # noqa: S106
-    token="1664008921_abcdef",
     expires_at=datetime(2022, 9, 24, 17, 42, 1, tzinfo=timezone(timedelta(hours=9))),
     url="https://play.dl.dlsite.com/content/work/doujin/RJ123000/RJ123456/",
-    workno=_TEST_WORKNO,
 )
 _TEST_ZIPTREE_JSON = {
     "hash": "123456abcdef",
