@@ -37,7 +37,7 @@ class PlayAPI(BaseAPI["PlayAPI"]):
         Returns:
             A new download token.
         """
-        url = "https://play.dlsite.com/api/download_token"
+        url = "https://play.dl.dlsite.com/api/download/sign/cookie"
         async with self.get(url, params={"workno": workno}) as response:
             return DownloadToken.from_json(await response.json())
 
@@ -51,7 +51,7 @@ class PlayAPI(BaseAPI["PlayAPI"]):
             A new zip tree.
         """
         url = f"{token.url}ziptree.json"
-        async with self.get(url, params=token.params) as response:
+        async with self.get(url) as response:
             return ZipTree.from_json(await response.json())
 
     async def download_playfile(
@@ -91,9 +91,7 @@ class PlayAPI(BaseAPI["PlayAPI"]):
             dest.parent.mkdir()
         if not force and dest.exists():
             raise FileExistsError(str(dest))
-        async with self.get(
-            url, params=token.params, timeout=self._DL_TIMEOUT
-        ) as response:
+        async with self.get(url, timeout=self._DL_TIMEOUT) as response:
             try:
                 with tempfile.NamedTemporaryFile(
                     prefix=dest.name, dir=dest.parent, delete=False
