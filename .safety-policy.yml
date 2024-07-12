@@ -1,0 +1,42 @@
+version: '3.0'
+
+scanning-settings:
+  max-depth: 6
+  exclude: []
+  include-files: []
+  system:
+    targets: []
+
+
+report:
+  dependency-vulnerabilities:
+    enabled: true
+    auto-ignore-in-report:
+      python:
+        environment-results: true
+        unpinned-requirements: true
+      cvss-severity: []
+
+
+fail-scan-with-exit-code:
+  dependency-vulnerabilities:
+    enabled: true
+    fail-on-any-of:
+      cvss-severity:
+        - medium
+        - high
+        - critical
+      exploitability:
+        - medium
+        - high
+        - critical
+
+security:
+  ignore-vulnerabilities:
+    70612:
+      reason: jinja2 only used for static docs gen via sphinx
+
+security-updates:
+  dependency-vulnerabilities:
+    auto-security-updates-limit:
+      - patch
