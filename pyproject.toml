@@ -107,5 +107,5 @@ documentation = "https://dlsite-async.readthedocs.io"
 
 [project.optional-dependencies]
 pil = [
-    "Pillow<11.0.0,>=10.0.0",
+    "Pillow<11.0.0,>=10.3.0",
 ]
