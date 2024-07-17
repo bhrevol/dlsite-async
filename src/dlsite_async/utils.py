@@ -1,5 +1,6 @@
 """Utilities."""
 import re
+from datetime import datetime
 
 from .exceptions import InvalidIDError
 
@@ -42,3 +43,16 @@ def find_maker_id(s: str) -> str:
     if m:
         return m.group().upper()
     raise InvalidIDError(f"No DLsite maker ID in string: {s}")
+
+
+def fromisoformat(timestamp: str) -> datetime:
+    try:
+        return datetime.fromisoformat(timestamp)
+    except ValueError:
+        pass
+    for pattern in ("%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%dT%H:%M:%S.%f%z"):
+        try:
+            return datetime.strptime(timestamp, pattern)
+        except ValueError:
+            pass
+    raise ValueError

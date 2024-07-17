@@ -21,7 +21,8 @@
 
 ## Features
 
-- Async DLsite API for fetching work metadata
+Async DLsite API for fetching work metadata
+
 - Supports most DLsite sites:
   - Comipo (`comic`)
   - Doujin (All-ages/`home`, Adult/`maniax`)
@@ -33,10 +34,11 @@
 - Japanese and English locale support
   (English metadata may not be available for all works)
 
-- Async DLsite Play API
-- Supports downloading web-optimized versions of works from DLsite Play
-  - Downloads require valid DLsite account login (only purchased works can be
-    downloaded)
+Async DLsite Play API
+
+- Requires valid DLsite account login
+- Supports listing purchased works
+- Supports downloading web-optimized versions of purchased works from DLsite Play
   - Only `optimized` file versions can be downloaded
   - Images may be resized to smaller resolution and compressed
   - Audio files may be re-encoded and compressed into MP3 format
@@ -237,6 +239,28 @@ Download web-optimized images from a manga/comic work to the current working dir
 ...             )
 ...
 >>> asyncio.run(f())
+```
+
+List purchased works in order of purchase:
+
+```py
+>>> import asyncio
+>>> from dlsite_async import PlayAPI
+>>> async def f():
+...     async with PlayAPI() as play_api:
+...         await play_api.login(username, password)
+...         return sorted(
+...             [
+...                 (work, purchase_date)
+...                 async for work, purchase_date in play_api.purchases()
+...             ],
+...             key=lambda p: p[1],
+...         )
+...
+>>> asyncio.run(f())
+[(Work(...), datetime.datetime(2014, 7, 7, 4, 47, 6, tzinfo=datetime.timezone.utc)),
+ ...
+ (Work(...), datetime.datetime(2024, 7, 16, 14, 55, 40, tzinfo=datetime.timezone.utc)),]
 ```
 
 ## Contributing
