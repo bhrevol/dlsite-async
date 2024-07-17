@@ -7,17 +7,10 @@ from functools import cached_property
 from typing import Any, Iterable, Iterator, Optional, Type, TypeVar, Union, cast
 
 from ..exceptions import DlsiteError
+from ..utils import fromisoformat
 
 
 _PM = TypeVar("_PM", bound="_PlayModel")
-
-
-def _parse_expires(timestamp: str) -> datetime:
-    try:
-        return datetime.fromisoformat(timestamp)
-    except ValueError:
-        pass
-    return datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S%z")
 
 
 @dataclass(frozen=True)
@@ -59,7 +52,7 @@ class DownloadToken(_PlayModel):
             DlsiteError: An error occured.
         """
         try:
-            data["expires_at"] = _parse_expires(data["expires"])
+            data["expires_at"] = fromisoformat(data["expires"])
             return super().from_json(data)
         except KeyError as e:  # pragma: no cover
             raise DlsiteError("Got unexpected download_token data.") from e

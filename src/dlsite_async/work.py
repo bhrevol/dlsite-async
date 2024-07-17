@@ -10,6 +10,7 @@ class AgeCategory(IntEnum):
     """Work age rating."""
 
     ALL_AGES = 1
+    ALL = 1
     R15 = 2
     R18 = 3
 
