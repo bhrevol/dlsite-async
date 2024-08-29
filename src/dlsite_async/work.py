@@ -41,7 +41,7 @@ class WorkType(str, Enum):
     NOVEL = "NRE"
     PUZZLE = "PZL"
     ROLE_PLAYING = "RPG"
-    SHOOTING = "SHT"
+    SHOOTING = "STG"
     SIMULATION = "SLN"
     TABLE = "TBL"
     TOOLS_ACCESSORIES = "TOL"
