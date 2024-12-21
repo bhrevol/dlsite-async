@@ -5,7 +5,7 @@
 groups = ["default", "coverage", "dev", "docs", "lint", "mypy", "pil", "safety", "tests", "typeguard", "xdoctest"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:2ed4d0780573f1f99dbf982b66952ae889b11598f1b5a351d89dbc6d06d808f1"
+content_hash = "sha256:d16a2da3daad48a69e28ed6394a143669e4d3eaa71fe5c887b98ea1ff773b8f8"
 
 [[metadata.targets]]
 requires_python = "~=3.10"
@@ -1968,17 +1968,6 @@ dependencies = [
 files = [
     {file = "typer-0.15.1-py3-none-any.whl", hash = "sha256:7994fb7b8155b64d3402518560648446072864beefd44aa2dc36972a5972e847"},
     {file = "typer-0.15.1.tar.gz", hash = "sha256:a0588c0a7fa68a1978a069818657778f86abe6ff5ea6abf472f940a08bfe4f0a"},
-]
-
-[[package]]
-name = "types-pillow"
-version = "10.2.0.20240822"
-requires_python = ">=3.8"
-summary = "Typing stubs for Pillow"
-groups = ["tests"]
-files = [
-    {file = "types-Pillow-10.2.0.20240822.tar.gz", hash = "sha256:559fb52a2ef991c326e4a0d20accb3bb63a7ba8d40eb493e0ecb0310ba52f0d3"},
-    {file = "types_Pillow-10.2.0.20240822-py3-none-any.whl", hash = "sha256:d9dab025aba07aeb12fd50a6799d4eac52a9603488eca09d7662543983f16c5d"},
 ]
 
 [[package]]
