@@ -47,6 +47,7 @@ Async DLsite Play API
     HLS video segments is not supported.
 - Supports de-scrambling downloaded images (from book type works)
   - Image de-scrambling requires installation with `dlsite-async[pil]`
+- Supports downloading Comic Viewer ebook format (works with `ebook_fixed` PlayFile type)
 
 ## Requirements
 
@@ -261,6 +262,52 @@ List purchased works in order of purchase:
 [(Work(...), datetime.datetime(2014, 7, 7, 4, 47, 6, tzinfo=datetime.timezone.utc)),
  ...
  (Work(...), datetime.datetime(2024, 7, 16, 14, 55, 40, tzinfo=datetime.timezone.utc)),]
+```
+
+Download the first page from a Comic Viewer ebook work to the current working directory
+(as a web-optimized WebP image):
+
+```py
+>>> import os
+>>> import asyncio
+>>> from dlsite_async import EbookSession, PlayAPI
+>>> async def f():
+...     async with PlayAPI() as play_api:
+...         await play_api.login(username, password)
+...         token = await play_api.download_token("BJ635840")
+...         tree = await play_api.ziptree(token)
+...         for filename, playfile in tree.items():
+...             if playfile.type != "ebook_fixed":
+...                 continue
+...             ebook_dir, _ = os.path.splitext(filename)
+...             async with EbookSession(play_api, tree, playfile) as ebook:
+...                 await ebook.download_page(0, ebook_dir, mkdir=True, force=True)
+>>> asyncio.run(f())
+```
+
+Download all pages from a Comic Viewer ebook work to the current working directory
+(as JPEG images):
+(Note that using `convert=jpg|png` requires `dlsite_async[pil]`):
+
+```py
+>>> import os
+>>> import asyncio
+>>> from dlsite_async import EbookSession, PlayAPI
+>>> async def f():
+...     async with PlayAPI() as play_api:
+...         await play_api.login(username, password)
+...         token = await play_api.download_token("BJ635840")
+...         tree = await play_api.ziptree(token)
+...         for filename, playfile in tree.items():
+...             if playfile.type != "ebook_fixed":
+...                 continue
+...             ebook_dir, _ = os.path.splitext(filename)
+...             async with EbookSession(play_api, tree, playfile) as ebook:
+...                 for i in range(ebook.page_count):
+...                     await ebook.download_page(
+...                         i, ebook_dir, mkdir=True, force=True, convert="jpg"
+...                     )
+>>> asyncio.run(f())
 ```
 
 ## Contributing

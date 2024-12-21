@@ -93,6 +93,7 @@ _TEST_PLAYFILE = PlayFile(
             "size": "123.0B",
         },
     },
+    hashname="123456abcdef.jpg",
 )
 _TEST_ZIPTREE = ZipTree(
     hash="123456abcdef",
@@ -115,6 +116,7 @@ _TEST_ZIPTREE = ZipTree(
             path="foo",
         )
     ],
+    workno=_TEST_WORKNO,
 )
 
 
