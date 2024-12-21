@@ -35,9 +35,6 @@ asyncio_mode = "auto"
 coverage = [
     "coverage[toml]>=7.4.0"
 ]
-dev = [
-    "nox>=2023.4.22",
-]
 docs = [
     "furo>=2023.9.10",
     "myst-parser>=2.0.0",
@@ -57,7 +54,6 @@ tests = [
     "pytest>=7.4.3",
     "pytest-asyncio<1.0.0,>=0.21.0",
     "pytest-mock<4.0.0,>=3.8.2",
-    "types-Pillow<11.0.0,>=10.0.0",
 ]
 safety = [
     "safety>=2.3.5"
@@ -85,9 +81,9 @@ authors = [
     {name = "byeonhyeok", email = "bhrevol@gmail.com"},
 ]
 license = {text = "MIT"}
-requires-python = ">=3.9,<4.0"
+requires-python = ">=3.10,<4.0"
 dependencies = [
-    "lxml<5.2.3,>=5.2.2",
+    "lxml>=5.3.0",
     "aiohttp<4.0.0,>=3.8.1",
     "beautifulsoup4<5.0.0,>=4.11.1",
 ]
@@ -107,5 +103,42 @@ documentation = "https://dlsite-async.readthedocs.io"
 
 [project.optional-dependencies]
 pil = [
-    "Pillow<11.0.0,>=10.3.0",
+    "Pillow>=11.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "nox>=2023.4.22",
+]
+coverage = [
+    "coverage[toml]>=7.4.0"
+]
+docs = [
+    "furo>=2023.9.10",
+    "myst-parser>=2.0.0",
+    "sphinx>=7.2.6",
+    "sphinx-click>=5.1.0",
+]
+lint = [
+    "pre-commit>=3.6.0"
+]
+mypy = [
+    "mypy>=1.8.0"
+]
+tests = [
+    "aioresponses<1.0.0,>=0.7.3",
+    "lxml-stubs<1.0.0,>=0.4.0",
+    "pygments>=2.17.2",
+    "pytest>=7.4.3",
+    "pytest-asyncio<1.0.0,>=0.21.0",
+    "pytest-mock<4.0.0,>=3.8.2",
+]
+safety = [
+    "safety>=2.3.5"
+]
+typeguard = [
+    "typeguard>=4.1.5",
+]
+xdoctest = [
+    "xdoctest[colors]>=1.1.2",
 ]
