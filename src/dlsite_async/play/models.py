@@ -70,6 +70,7 @@ class PlayFile(_PlayModel):
     length: int
     type: str
     files: dict[str, Any]
+    hashname: str
 
     def __post_init__(self) -> None:
         object.__setattr__(self, self.type, self.files)
@@ -95,7 +96,11 @@ class PlayFile(_PlayModel):
         return cast(int, self.files["optimized"]["length"])
 
     @classmethod
-    def from_json(cls, data: dict[str, Any]) -> "PlayFile":
+    def from_json(
+        cls,
+        data: dict[str, Any],
+        hashname: Optional[str] = None,
+    ) -> "PlayFile":
         """Construct a PlayFile from JSON response.
 
         Args:
@@ -106,7 +111,7 @@ class PlayFile(_PlayModel):
         """
         type_ = data["type"]
         files = data.get(type_, {})
-        return cls(data["length"], data["type"], files)
+        return cls(data["length"], data["type"], files, hashname=hashname or "")
 
 
 @dataclass(frozen=True)
@@ -173,6 +178,10 @@ class ZipTree(_PlayModel, Mapping[str, PlayFile]):
     hash: str
     playfile: dict[str, PlayFile]
     tree: list[_TreeEntry]
+    workno: Optional[str] = None
+    version: Optional[str] = None
+    revision: Optional[str] = None
+    updated_at: Optional[datetime] = None
 
     @classmethod
     def from_json(cls, data: dict[str, Any]) -> "ZipTree":
@@ -190,13 +199,27 @@ class ZipTree(_PlayModel, Mapping[str, PlayFile]):
         try:
             hash = data["hash"]
             playfile = {
-                key: PlayFile.from_json(value)
+                key: PlayFile.from_json(value, hashname=key)
                 for key, value in data.get("playfile", {}).items()
             }
             tree = [_tree_entry(entry) for entry in data.get("tree", [])]
         except KeyError as e:  # pragma: no cover
             raise DlsiteError("Got unexpected ZipTree data.") from e
-        return cls(hash=hash, playfile=playfile, tree=tree)
+        if "updated_at" in data:
+            updated_at: Optional[datetime] = datetime.strptime(
+                data["updated_at"], "%Y-%m-%d %H:%M:%S"
+            )
+        else:
+            updated_at = None
+        return cls(
+            hash=hash,
+            playfile=playfile,
+            tree=tree,
+            workno=data.get("workno"),
+            version=data.get("version"),
+            revision=data.get("revision"),
+            updated_at=updated_at,
+        )
 
     @cached_property
     def _dict(self) -> dict[str, PlayFile]:
@@ -222,3 +245,51 @@ class ZipTree(_PlayModel, Mapping[str, PlayFile]):
 
     def __iter__(self) -> Iterator[str]:
         return iter(self._dict)
+
+
+@dataclass(frozen=True)
+class ViewerToken(_PlayModel):
+    """Ebook Viewer API download token."""
+
+    expire_at: datetime
+    key: bytes
+    prefix: str
+    key_pair_id: str
+    policy: str
+    signature: str
+    d: str
+    v: str
+
+    @property
+    def params(self) -> dict[str, Any]:
+        return {
+            "Policy": self.policy,
+            "Signature": self.signature,
+            "Key-Pair-Id": self.key_pair_id,
+            "d": self.d,
+            "v": self.v,
+        }
+
+    @classmethod
+    def from_json(cls, data: dict[str, Any]) -> "ViewerToken":
+        """Construct a DownloadToken from JSON response.
+
+        Args:
+            data: ``download_token`` JSON data.
+
+        Returns:
+            A new download token.
+
+        Raises:
+            DlsiteError: An error occured.
+        """
+        try:
+            data["expire_at"] = fromisoformat(data["expireAt"])
+            parameters = data.get("parameters", {})
+            data["key_pair_id"] = parameters["Key-Pair-Id"]
+            data["policy"] = parameters["Policy"]
+            data["signature"] = parameters["Signature"]
+            data["d"] = parameters["d"]
+            return super().from_json(data)
+        except KeyError as e:  # pragma: no cover
+            raise DlsiteError("Got unexpected download_token data.") from e

@@ -39,6 +39,7 @@ def test_descramble(tmp_path: Path) -> None:
                 "height": 256,
             }
         },
+        "abc123",
     )
     descramble(image_file, playfile)
     with Image.open(image_file) as im:
