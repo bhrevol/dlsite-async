@@ -264,8 +264,8 @@ List purchased works in order of purchase:
  (Work(...), datetime.datetime(2024, 7, 16, 14, 55, 40, tzinfo=datetime.timezone.utc)),]
 ```
 
-Download the first page from a Comic Viewer ebook work to the current working directory
-(as a web-optimized WebP image):
+Download the first page from a Comic Viewer or Webtoon ebook work to the current working
+directory (as a web-optimized WebP image):
 
 ```py
 >>> import os
@@ -277,7 +277,7 @@ Download the first page from a Comic Viewer ebook work to the current working di
 ...         token = await play_api.download_token("BJ635840")
 ...         tree = await play_api.ziptree(token)
 ...         for filename, playfile in tree.items():
-...             if playfile.type != "ebook_fixed":
+...             if not playfile.is_ebook:
 ...                 continue
 ...             ebook_dir, _ = os.path.splitext(filename)
 ...             async with EbookSession(play_api, tree, playfile) as ebook:
@@ -285,9 +285,10 @@ Download the first page from a Comic Viewer ebook work to the current working di
 >>> asyncio.run(f())
 ```
 
-Download all pages from a Comic Viewer ebook work to the current working directory
-(as JPEG images):
-(Note that using `convert=jpg|png` requires `dlsite_async[pil]`):
+Download all pages from a Comic Viewer or Webtoon ebook work to the current working
+directory (with web-optimized images converted to JPEG):
+
+*(Note that using `convert=jpg|png` requires `dlsite_async[pil]`)*
 
 ```py
 >>> import os
@@ -299,7 +300,7 @@ Download all pages from a Comic Viewer ebook work to the current working directo
 ...         token = await play_api.download_token("BJ635840")
 ...         tree = await play_api.ziptree(token)
 ...         for filename, playfile in tree.items():
-...             if playfile.type != "ebook_fixed":
+...             if not playfile.is_ebook:
 ...                 continue
 ...             ebook_dir, _ = os.path.splitext(filename)
 ...             async with EbookSession(play_api, tree, playfile) as ebook:
