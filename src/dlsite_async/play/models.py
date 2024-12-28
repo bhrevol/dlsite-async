@@ -88,12 +88,26 @@ class PlayFile(_PlayModel):
     @property
     def optimized_name(self) -> str:
         """Return optimized file name."""
-        return cast(str, self.files["optimized"]["name"])
+        try:
+            return cast(str, self.files["optimized"]["name"])
+        except KeyError as e:
+            raise DlsiteError(
+                "No direct-downloadable optimized files in this PlayFile"
+            ) from e
 
     @property
     def optimized_length(self) -> int:
         """Return optimized file length in bytes."""
-        return cast(int, self.files["optimized"]["length"])
+        try:
+            return cast(int, self.files["optimized"]["length"])
+        except KeyError as e:
+            raise DlsiteError(
+                "No direct-downloadable optimized files in this PlayFile"
+            ) from e
+
+    @property
+    def is_ebook(self) -> bool:
+        return self.type in {"ebook_fixed", "ebook_webtoon"}
 
     @classmethod
     def from_json(

@@ -45,8 +45,8 @@ class EbookSession(AbstractAsyncContextManager["EbookSession"]):
         self.workno = workno or ziptree.workno
         if not self.workno:
             raise ValueError("workno must be specified")
-        if self.playfile.type != "ebook_fixed":
-            raise ValueError("Unsupported ebook type")
+        if not self.playfile.is_ebook:
+            raise ValueError("Unsupported ebook type: {self.playfile.type}")
         self._token: Optional[ViewerToken] = None
         self._meta: dict[str, Any] = {}
 
