@@ -35,6 +35,8 @@ security:
   ignore-vulnerabilities:
     70612:
       reason: jinja2 only used for static docs gen via sphinx
+    74735:
+      reason: jinja2 only used for static docs gen via sphinx
 
 security-updates:
   dependency-vulnerabilities:
