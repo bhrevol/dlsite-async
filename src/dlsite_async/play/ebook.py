@@ -26,8 +26,8 @@ class EbookSession(AbstractAsyncContextManager["EbookSession"]):
 
     Args:
         play_api: Parent PlayAPI session.
-        ziptree: DLsite Play ZipTree for the ebook work. Must contain an ``ebook_fixed``
-            playfile entry.
+        ziptree: DLsite Play ZipTree for the ebook work. Must contain an ``ebook_fixed``,
+            ``ebook_webtoon`` or ``voicecomic_v2`` playfile entry.
         playfile: PlayFile entry for the ebook to open in ``ziptree``.
         workno: DLsite product ID for the ebook work (defaults to `ziptree.workno`).
     """
@@ -97,7 +97,7 @@ class EbookSession(AbstractAsyncContextManager["EbookSession"]):
             key_size=4096,
         )
         payload = {
-            "play_type": "ebook_fixed",
+            "play_type": self.playfile.type,
             "revision": self.ziptree.revision or "",
             "public_key": b64encode(
                 private_key.public_key().public_bytes(
@@ -137,6 +137,7 @@ class EbookSession(AbstractAsyncContextManager["EbookSession"]):
         mkdir: bool = False,
         convert: Optional[Literal["jpg", "png"]] = None,
         force: bool = False,
+        audio: bool = True,
     ) -> None:
         """Download one ebook page to the specified location.
 
@@ -149,6 +150,8 @@ class EbookSession(AbstractAsyncContextManager["EbookSession"]):
             convert: Convert downloaded images to the specified format (requires optional
                 ``dlsite-async[pil]`` dependency packages). By default, images are
                 downloaded in the original DLsite Play Viewer WebP format.
+            audio: Download audio for the page if it exists (only applicable for to
+                voicecomic works).
 
         Raises:
             FileExistsError: ``dest`` already exists.
@@ -207,6 +210,29 @@ class EbookSession(AbstractAsyncContextManager["EbookSession"]):
             _convert(temp.name, dest)
             os.remove(temp.name)
         else:
+            os.replace(temp.name, dest)
+
+        audio_src = page.get("audio", {}).get("src", "")
+        if audio_src:
+            url = f"{self._token.prefix}/{self.playfile.hashname}/{audio_src}"
+            dest = dest_dir / Path(audio_src).name
+            if not force and dest.exists():
+                raise FileExistsError(str(dest))
+            async with self._play.get(
+                url, params=self._token.params, timeout=self._play._DL_TIMEOUT
+            ) as response:
+                with tempfile.NamedTemporaryFile(
+                    prefix=dest.name, dir=dest.parent, delete=False
+                ) as temp:
+                    try:
+                        async for chunk in response.content.iter_chunked(
+                            self._play._DL_CHUNK_SIZE
+                        ):
+                            temp.write(chunk)
+                    except Exception:
+                        temp.close()
+                        os.remove(temp)
+                        raise
             os.replace(temp.name, dest)
 
 

@@ -47,7 +47,9 @@ Async DLsite Play API
     HLS video segments is not supported.
 - Supports de-scrambling downloaded images (from book type works)
   - Image de-scrambling requires installation with `dlsite-async[pil]`
-- Supports downloading Comic Viewer ebook format (works with `ebook_fixed` PlayFile type)
+- Supports downloading Comic Viewer ebook formats (`ebook_fixed`, `ebook_webtoon`,
+  `voicecomic_v2` PlayFile types)
+  - For `voicecomic_v2` works, audio for each page is downloaded alongside page images.
 
 ## Requirements
 

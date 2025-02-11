@@ -107,7 +107,7 @@ class PlayFile(_PlayModel):
 
     @property
     def is_ebook(self) -> bool:
-        return self.type in {"ebook_fixed", "ebook_webtoon"}
+        return self.type in {"ebook_fixed", "ebook_webtoon", "voicecomic_v2"}
 
     @classmethod
     def from_json(
@@ -271,18 +271,20 @@ class ViewerToken(_PlayModel):
     key_pair_id: str
     policy: str
     signature: str
-    d: str
+    d: str | None
     v: str
 
     @property
     def params(self) -> dict[str, Any]:
-        return {
+        p = {
             "Policy": self.policy,
             "Signature": self.signature,
             "Key-Pair-Id": self.key_pair_id,
-            "d": self.d,
-            "v": self.v,
         }
+        if self.d is not None:
+            p["d"] = self.d
+        p["v"] = self.v
+        return p
 
     @classmethod
     def from_json(cls, data: dict[str, Any]) -> "ViewerToken":
@@ -303,7 +305,7 @@ class ViewerToken(_PlayModel):
             data["key_pair_id"] = parameters["Key-Pair-Id"]
             data["policy"] = parameters["Policy"]
             data["signature"] = parameters["Signature"]
-            data["d"] = parameters["d"]
+            data["d"] = parameters.get("d")
             return super().from_json(data)
         except KeyError as e:  # pragma: no cover
             raise DlsiteError("Got unexpected download_token data.") from e
