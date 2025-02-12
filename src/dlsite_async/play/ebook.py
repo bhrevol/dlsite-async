@@ -135,9 +135,10 @@ class EbookSession(AbstractAsyncContextManager["EbookSession"]):
         index: int,
         dest_dir: Union[str, Path],
         mkdir: bool = False,
+        audio: bool = True,
+        image: bool = True,
         convert: Optional[Literal["jpg", "png"]] = None,
         force: bool = False,
-        audio: bool = True,
     ) -> None:
         """Download one ebook page to the specified location.
 
@@ -147,11 +148,13 @@ class EbookSession(AbstractAsyncContextManager["EbookSession"]):
             mkdir: Create ``dest_dir`` and parent directories if they do not already
                 exist.
             force: Overwrite existing destination file if it already exists.
-            convert: Convert downloaded images to the specified format (requires optional
-                ``dlsite-async[pil]`` dependency packages). By default, images are
-                downloaded in the original DLsite Play Viewer WebP format.
             audio: Download audio for the page if it exists (only applicable for to
                 voicecomic works).
+            image: Download image for the page if it exists.
+            convert: Convert downloaded images to the specified format (requires optional
+                ``dlsite-async[pil]`` dependency packages). By default, images are
+                downloaded in the original DLsite Play Viewer WebP format. Only applicable
+                when ``image`` is ``True``.
 
         Raises:
             FileExistsError: ``dest`` already exists.
@@ -167,73 +170,77 @@ class EbookSession(AbstractAsyncContextManager["EbookSession"]):
         src = Path(page["src"])
         url = f"{self._token.prefix}/{self.playfile.hashname}/{src}"
 
-        if convert:
-            if importlib.util.find_spec("PIL.Image") is not None:
-                ext: str = convert
+        if image:
+            if convert:
+                if importlib.util.find_spec("PIL.Image") is not None:
+                    ext: str = convert
+                else:
+                    logger.warn(
+                        "Image conversion requires installation with dlsite-async[pil]"
+                    )
+                    ext = "webp"
+                    convert = None
             else:
-                logger.warn(
-                    "Image conversion requires installation with dlsite-async[pil]"
-                )
                 ext = "webp"
-                convert = None
-        else:
-            ext = "webp"
-        dest = dest_dir / f"{src.stem}.{ext}"
-        if mkdir and not dest.parent.exists():
-            dest.parent.mkdir(parents=True)
-        if not force and dest.exists():
-            raise FileExistsError(str(dest))
-        async with self._play.get(
-            url, params=self._token.params, timeout=self._play._DL_TIMEOUT
-        ) as response:
-            with tempfile.NamedTemporaryFile(
-                prefix=dest.stem, suffix=".webp", dir=dest.parent, delete=False
-            ) as temp:
-                try:
-                    offset = 0
-                    async for chunk in response.content.iter_chunked(
-                        self._play._DL_CHUNK_SIZE
-                    ):
-                        temp.write(
-                            bytes(
-                                chunk[i]
-                                ^ self._token.key[(offset + i) % len(self._token.key)]
-                                for i in range(len(chunk))
-                            )
-                        )
-                        offset += len(chunk)
-                except Exception:
-                    temp.close()
-                    os.remove(temp.name)
-                    raise
-        if convert:
-            _convert(temp.name, dest)
-            os.remove(temp.name)
-        else:
-            os.replace(temp.name, dest)
-
-        audio_src = page.get("audio", {}).get("src", "")
-        if audio_src:
-            url = f"{self._token.prefix}/{self.playfile.hashname}/{audio_src}"
-            dest = dest_dir / Path(audio_src).name
+            dest = dest_dir / f"{src.stem}.{ext}"
+            if mkdir and not dest.parent.exists():
+                dest.parent.mkdir(parents=True)
             if not force and dest.exists():
                 raise FileExistsError(str(dest))
             async with self._play.get(
                 url, params=self._token.params, timeout=self._play._DL_TIMEOUT
             ) as response:
                 with tempfile.NamedTemporaryFile(
-                    prefix=dest.name, dir=dest.parent, delete=False
+                    prefix=dest.stem, suffix=".webp", dir=dest.parent, delete=False
                 ) as temp:
                     try:
+                        offset = 0
                         async for chunk in response.content.iter_chunked(
                             self._play._DL_CHUNK_SIZE
                         ):
-                            temp.write(chunk)
+                            temp.write(
+                                bytes(
+                                    chunk[i]
+                                    ^ self._token.key[
+                                        (offset + i) % len(self._token.key)
+                                    ]
+                                    for i in range(len(chunk))
+                                )
+                            )
+                            offset += len(chunk)
                     except Exception:
                         temp.close()
-                        os.remove(temp)
+                        os.remove(temp.name)
                         raise
-            os.replace(temp.name, dest)
+            if convert:
+                _convert(temp.name, dest)
+                os.remove(temp.name)
+            else:
+                os.replace(temp.name, dest)
+
+        if audio:
+            audio_src = page.get("audio", {}).get("src", "")
+            if audio_src:
+                url = f"{self._token.prefix}/{self.playfile.hashname}/{audio_src}"
+                dest = dest_dir / Path(audio_src).name
+                if not force and dest.exists():
+                    raise FileExistsError(str(dest))
+                async with self._play.get(
+                    url, params=self._token.params, timeout=self._play._DL_TIMEOUT
+                ) as response:
+                    with tempfile.NamedTemporaryFile(
+                        prefix=dest.name, dir=dest.parent, delete=False
+                    ) as temp:
+                        try:
+                            async for chunk in response.content.iter_chunked(
+                                self._play._DL_CHUNK_SIZE
+                            ):
+                                temp.write(chunk)
+                        except Exception:
+                            temp.close()
+                            os.remove(temp)
+                            raise
+                os.replace(temp.name, dest)
 
 
 def _convert(src: Union[str, Path], dest: Union[str, Path]) -> None:
