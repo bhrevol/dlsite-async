@@ -86,6 +86,7 @@ class Work:
     page_count: Optional[int] = None
     description: Optional[str] = None
     sample_images: Optional[list[str]] = None
+    work_name_masked: Optional[str] = None
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> "Work":
