@@ -42,7 +42,7 @@ _TEST_HTML_WORK = replace(
     page_count=123,
     circle="Test Circle",
     voice_actor=["Test Seiyuu 1", "Test Seiyuu 2"],
-    series="Test Series",
+    title_name_masked="Test Series",
 )
 _WORK_TEST_HTML = r"""
 <html>

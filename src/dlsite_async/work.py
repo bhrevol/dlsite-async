@@ -70,7 +70,6 @@ class Work:
     book_type: Optional[BookType] = None
     announce_date: Optional[datetime] = None
     modified_date: Optional[datetime] = None
-    series: Optional[str] = None
     scenario: Optional[list[str]] = None
     illustration: Optional[list[str]] = None
     voice_actor: Optional[list[str]] = None
@@ -87,6 +86,8 @@ class Work:
     description: Optional[str] = None
     sample_images: Optional[list[str]] = None
     work_name_masked: Optional[str] = None
+    title_name: Optional[str] = None
+    title_name_masked: Optional[str] = None
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> "Work":
@@ -98,3 +99,13 @@ class Work:
     def release_date(self) -> Optional[datetime]:
         """Release date."""
         return self.regist_date
+
+    @property
+    def series(self) -> Optional[str]:
+        """Series name.
+
+        Set for backwards compatibility.
+        """
+        if self.title_name_masked is not None:
+            return self.title_name_masked
+        return self.title_name

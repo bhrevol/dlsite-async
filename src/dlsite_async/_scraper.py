@@ -136,7 +136,7 @@ _parsers = [
     _ListRowParser("voice_actor", ("声優", "Voice Actor")),
     _ListRowParser("writer", ("作家", "Writer")),
     _TextRowParser("file_size", ("ファイル容量", "File size")),
-    _TextRowParser("series", ("シリーズ名", "Series", "Series name")),
+    _TextRowParser("title_name_masked", ("シリーズ名", "Series", "Series name")),
 ]
 
 
