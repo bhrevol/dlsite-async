@@ -109,6 +109,10 @@ class PlayFile(_PlayModel):
     def is_ebook(self) -> bool:
         return self.type in {"ebook_fixed", "ebook_webtoon", "voicecomic_v2"}
 
+    @property
+    def is_epub(self) -> bool:
+        return self.type == "epub"
+
     @classmethod
     def from_json(
         cls,
@@ -288,7 +292,7 @@ class ViewerToken(_PlayModel):
 
     @classmethod
     def from_json(cls, data: dict[str, Any]) -> "ViewerToken":
-        """Construct a DownloadToken from JSON response.
+        """Construct a ViewerToken from JSON response.
 
         Args:
             data: ``download_token`` JSON data.
@@ -309,3 +313,13 @@ class ViewerToken(_PlayModel):
             return super().from_json(data)
         except KeyError as e:  # pragma: no cover
             raise DlsiteError("Got unexpected download_token data.") from e
+
+
+@dataclass(frozen=True)
+class CSRToken(_PlayModel):
+    """CSR viewer API download token."""
+
+    cgi: str
+    param: str
+    workno: str
+    customer_id: str
