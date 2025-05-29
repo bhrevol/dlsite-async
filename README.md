@@ -71,6 +71,8 @@ $ pip install dlsite-async[pil]
 
 ## Usage examples
 
+### DLsite work lookup
+
 Fetch manga information:
 
 ```py
@@ -135,6 +137,8 @@ Work(
     ...
 )
 ```
+
+### DLsite Play work lookup
 
 List DLsite Play files in a work:
 
@@ -219,6 +223,36 @@ List DLsite Play files in a work:
 }
 ```
 
+### DLsite Play purchase lookup
+
+List purchased works in order of purchase:
+
+```py
+>>> import asyncio
+>>> from dlsite_async import PlayAPI
+>>> async def f():
+...     async with PlayAPI() as play_api:
+...         await play_api.login(username, password)
+...         return sorted(
+...             [
+...                 (work, purchase_date)
+...                 async for work, purchase_date in play_api.purchases()
+...             ],
+...             key=lambda p: p[1],
+...         )
+...
+>>> asyncio.run(f())
+[(Work(...), datetime.datetime(2014, 7, 7, 4, 47, 6, tzinfo=datetime.timezone.utc)),
+ ...
+ (Work(...), datetime.datetime(2024, 7, 16, 14, 55, 40, tzinfo=datetime.timezone.utc)),]
+```
+
+### DLsite Play comic/manga/book download
+
+DLsite Play uses several different web based viewers depending on the type of work and when it was originally added in DLsite.
+The following examples show how to download each particular type.
+For an example of a generalized comic/manga/book downloader that handles all of these types see [dlsite-utils](https://github.com/bhrevol/dlsite-utils/blob/main/src/dlsite_utils/book.py).
+
 Download web-optimized images from a manga/comic work to the current working directory
 (Note that using `descramble=True` requires `dlsite_async[pil]`):
 
@@ -242,28 +276,6 @@ Download web-optimized images from a manga/comic work to the current working dir
 ...             )
 ...
 >>> asyncio.run(f())
-```
-
-List purchased works in order of purchase:
-
-```py
->>> import asyncio
->>> from dlsite_async import PlayAPI
->>> async def f():
-...     async with PlayAPI() as play_api:
-...         await play_api.login(username, password)
-...         return sorted(
-...             [
-...                 (work, purchase_date)
-...                 async for work, purchase_date in play_api.purchases()
-...             ],
-...             key=lambda p: p[1],
-...         )
-...
->>> asyncio.run(f())
-[(Work(...), datetime.datetime(2014, 7, 7, 4, 47, 6, tzinfo=datetime.timezone.utc)),
- ...
- (Work(...), datetime.datetime(2024, 7, 16, 14, 55, 40, tzinfo=datetime.timezone.utc)),]
 ```
 
 Download the first page from a Comic Viewer or Webtoon ebook work to the current working
