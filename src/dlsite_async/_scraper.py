@@ -104,7 +104,14 @@ class _ListRowParser(_RowParser):
 
     def parse_value(self, td: html.HtmlElement) -> list[str]:
         """Parse the specfied table cell value."""
-        return [_unescape(a.text_content()) for a in td.xpath(".//a")]
+        anchors = [_unescape(a.text_content()) for a in td.xpath(".//a")]
+        if anchors:
+            return anchors
+        return list(
+            {
+                _unescape(span.text_content()): None for span in td.xpath(".//span")
+            }.keys()
+        )
 
 
 class _TextRowParser(_RowParser):
@@ -136,7 +143,9 @@ _parsers = [
     _ListRowParser("voice_actor", ("声優", "Voice Actor")),
     _ListRowParser("writer", ("作家", "Writer")),
     _TextRowParser("file_size", ("ファイル容量", "File size")),
-    _TextRowParser("title_name_masked", ("シリーズ名", "Series", "Series name")),
+    _TextRowParser(
+        "title_name_masked", ("シリーズ", "シリーズ名", "Series", "Series name")
+    ),
 ]
 
 
@@ -149,6 +158,8 @@ def parse_work_html(content: str) -> dict[str, Any]:
         '//table[@id="work_outline"]//tr',
     ):
         info.update(_parse_work_outline_rows(cast(html.HtmlElement, tree.xpath(table))))
+    for dl in tree.xpath('//dl[@class="c-productInfo__box"]'):
+        info.update(_parse_comipo_product_info(cast(html.HtmlElement, dl)))
     for div in ('//div[@class="product-slider-data"]//div',):
         (info.update(_parse_work_slider_data(cast(html.HtmlElement, tree.xpath(div)))),)
     for meta in tree.xpath('//meta[@name="description"]'):
@@ -175,6 +186,20 @@ def _parse_work_outline_rows(trs: Iterable[html.HtmlElement]) -> Any:
             logger.debug(f"No matching parser for outline row: {tr}")
 
 
+def _parse_comipo_product_info(dl: html.HtmlElement) -> Any:
+    for dt in dl.findall("dt"):
+        for sibling in dt.itersiblings():
+            if sibling.tag != "dd":
+                break
+            for parser in _parsers:
+                if parser.can_parse(dt):
+                    try:
+                        yield parser.field, parser.parse_value(sibling)
+                    except ScrapingError:  # pragma: no cover
+                        pass
+                    break
+
+
 def _parse_work_slider_data(divs: Iterable[html.HtmlElement]) -> Any:
     images = []
     for div in divs:
@@ -186,6 +211,7 @@ def _parse_work_slider_data(divs: Iterable[html.HtmlElement]) -> Any:
 
 _DESC_EN = re.compile(r'"DLsite.*DLsite!$')
 _DESC_JP = re.compile(r"「DLsite[^」]*」.*「DLsite[^」]*」!$")
+_DESC_COMIPO_JP = re.compile(r"「comipo[^-]*-")
 
 
 def _parse_work_description(meta: html.HtmlElement) -> Any:
@@ -194,6 +220,7 @@ def _parse_work_description(meta: html.HtmlElement) -> Any:
         content = _unescape(content)
         content = _DESC_EN.sub("", content).strip()
         content = _DESC_JP.sub("", content).strip()
+        content = _DESC_COMIPO_JP.sub("", content).strip()
     return {"description": content} if content else {}
 
 
