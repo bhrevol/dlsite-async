@@ -21,10 +21,11 @@
 
 ## Features
 
-Async DLsite API for fetching work metadata
+Async DLsite API for fetching work metadata.
+Can be used whether works are served from `dlsite.com` or `comipo.app`.
 
 - Supports most DLsite sites:
-  - Comipo (`comic`)
+  - Comipo (`comic`/`comipo.app`)
   - Doujin (All-ages/`home`, Adult/`maniax`)
   - Adult comics (`books`)
   - All-ages games (`soft`)
