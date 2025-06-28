@@ -20,6 +20,7 @@ class BookType(str, Enum):
 
     BOOK = "comic"
     MAGAZINE = "magazine"
+    PUBLICATION = "publication"
     STANDALONE = "oneshot"
 
 
@@ -39,6 +40,7 @@ class WorkType(str, Enum):
     MUSIC = "MUS"
     MUSIC_MATERIALS = "AMT"
     NOVEL = "NRE"
+    PUBLICATION = "PBC"
     PUZZLE = "PZL"
     ROLE_PLAYING = "RPG"
     SHOOTING = "STG"
