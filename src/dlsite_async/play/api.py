@@ -51,7 +51,7 @@ class PlayAPI(BaseAPI["PlayAPI"]):
         Returns:
             A new download token.
         """
-        url = "https://play.dl.dlsite.com/api/download/sign/cookie"
+        url = "https://play.dl.dlsite.com/api/v3/download/sign/cookie"
         async with self.get(url, params={"workno": workno}) as response:
             return DownloadToken.from_json(await response.json())
 

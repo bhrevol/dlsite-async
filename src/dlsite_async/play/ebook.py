@@ -106,7 +106,7 @@ class EbookSession(AbstractAsyncContextManager["EbookSession"]):
                 )
             ).decode(),
         }
-        url = f"https://play.dlsite.com/api/v2/viewer/token/{self.workno}"
+        url = f"https://play.dlsite.com/api/v3/viewer/token/{self.workno}"
         async with self._play.post(url, json=payload) as response:
             data = await response.json()
             ciphertext = b64decode(data["key"])
