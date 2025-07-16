@@ -52,7 +52,7 @@ tests = [
     "lxml-stubs<1.0.0,>=0.4.0",
     "pygments>=2.17.2",
     "pytest>=7.4.3",
-    "pytest-asyncio<1.0.0,>=0.21.0",
+    "pytest-asyncio<1.2.0,>=1.1.0",
     "pytest-mock<4.0.0,>=3.8.2",
 ]
 safety = [
@@ -131,7 +131,7 @@ tests = [
     "lxml-stubs<1.0.0,>=0.4.0",
     "pygments>=2.17.2",
     "pytest>=7.4.3",
-    "pytest-asyncio<1.0.0,>=0.21.0",
+    "pytest-asyncio<1.2.0,>=1.1.0",
     "pytest-mock<4.0.0,>=3.8.2",
 ]
 safety = [
