@@ -1,7 +1,5 @@
 """DLsite Play API classes."""
-import asyncio
 import logging
-import math
 import os
 import tempfile
 from datetime import datetime
@@ -129,7 +127,7 @@ class PlayAPI(BaseAPI["PlayAPI"]):
     async def purchases(
         self,
         last: Optional[datetime] = None,
-    ) -> AsyncIterator[tuple[Work, datetime]]:
+    ) -> AsyncIterator[tuple[Work, Optional[datetime]]]:
         """Iterate over purchased works.
 
         Work information is populated using the Play API and may not match what would
@@ -154,32 +152,35 @@ class PlayAPI(BaseAPI["PlayAPI"]):
             Play API requests are made concurrently and yielded as they are completed.
             Purchases are not guaranteed to be yielded in historical order.
         """
-        url = "https://play.dlsite.com/api/purchases"
-        now = int(datetime.now().timestamp())
-        count, page_limit, concurrency = await self._get_product_count(
-            int(last.timestamp()) if last else 0
-        )
+        url = "https://play.dlsite.com/api/v3/content/works"
         last_ = int(last.timestamp()) if last else 0
+        count, _page_limit, _concurrency = await self._get_product_count(last_)
         if count < 1:
             return
+        worknos, sales = await self._get_product_sales(last_)
 
         async def _get_one(page: int) -> Any:
-            async with self.get(
+            start = page * 100
+            async with self.post(
                 url,
-                params={"_": now, "last": last_, "page": page},
+                json=[workno for workno in worknos[start : start + 100]],
             ) as response:
                 return await response.json()
 
-        for pages in _batched(range(1, math.ceil(count / page_limit) + 1), concurrency):
-            for coro in asyncio.as_completed(
-                [asyncio.ensure_future(_get_one(page)) for page in pages]
-            ):
-                data = await coro
-                for work in data.get("works", []):
-                    yield _parse_purchase(work, locale=self.locale or "ja_JP")
+        # api v3 webapp ignores pagination/concurrency and just requests 100 works at a time
+        # api v3 server also does not like high concurrent requests so just do
+        # it sequentially
+        for works in _batched(worknos, 100):
+            async with self.post(url, json=works) as response:
+                data = await response.json()
+            for work in data.get("works", []):
+                purchase, sales_date = _parse_purchase(
+                    work, locale=self.locale or "ja_JP"
+                )
+                yield (purchase, sales_date or sales.get(purchase.product_id))
 
     async def _get_product_count(self, last: int) -> tuple[int, int, int]:
-        url = "https://play.dlsite.com/api/product_count"
+        url = "https://play.dlsite.com/api/v3/content/count"
         async with self.get(url, params={"last": last}) as response:
             data = await response.json()
         return (
@@ -187,6 +188,22 @@ class PlayAPI(BaseAPI["PlayAPI"]):
             data.get("page_limit", 50),
             data.get("concurrency", 500),
         )
+
+    async def _get_product_sales(
+        self, last: int
+    ) -> tuple[list[str], dict[str, datetime]]:
+        url = "https://play.dlsite.com/api/v3/content/sales"
+        async with self.get(url, params={"last": last}) as response:
+            data = await response.json()
+        works = []
+        sales = {}
+        for item in data:
+            try:
+                works.append(item["workno"])
+                sales[item["workno"]] = fromisoformat(item["sales_date"])
+            except KeyError:
+                continue
+        return works, sales
 
 
 def _batched(iterable: Iterable[Any], n: int) -> Iterator[tuple[Any, ...]]:
@@ -197,7 +214,7 @@ def _batched(iterable: Iterable[Any], n: int) -> Iterator[tuple[Any, ...]]:
 
 def _parse_purchase(
     d: Mapping[str, Any], locale: str = "ja_JP"
-) -> tuple[Work, datetime]:
+) -> tuple[Work, Optional[datetime]]:
     """Construct Work from purchases API dictionary."""
     d = dict(d)
     d["age_category"] = AgeCategory[d["age_category"].upper()]
@@ -211,7 +228,10 @@ def _parse_purchase(
     d["work_name"] = _localized_name(d["name"])
     if d.get("regist_date"):
         d["regist_date"] = fromisoformat(d["regist_date"])
-    sales_date: datetime = fromisoformat(d["sales_date"])
+    if d.get("sales_date"):
+        sales_date: Optional[datetime] = fromisoformat(d["sales_date"])
+    else:
+        sales_date = None
     tags = d.get("tags") or []
     for tag in tags:
         classes = {
