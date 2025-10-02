@@ -167,7 +167,7 @@ class EpubSession(AbstractAsyncContextManager["EpubSession"]):
 
     async def _download_token(self) -> CSRToken:
         """Return a download token for this work."""
-        url = "https://play.dlsite.com/api/csr/token"
+        url = "https://play.dlsite.com/api/v3/csr/token"
         params = {
             "workno": self.workno,
             "hashname": self.playfile.hashname or "",
