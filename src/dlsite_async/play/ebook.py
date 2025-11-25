@@ -139,7 +139,7 @@ class EbookSession(AbstractAsyncContextManager["EbookSession"]):
         image: bool = True,
         convert: Optional[Literal["jpg", "png"]] = None,
         force: bool = False,
-    ) -> None:
+    ) -> list[Path]:
         """Download one ebook page to the specified location.
 
         Args:
@@ -156,6 +156,9 @@ class EbookSession(AbstractAsyncContextManager["EbookSession"]):
                 downloaded in the original DLsite Play Viewer WebP format. Only applicable
                 when ``image`` is ``True``.
 
+        Returns:
+            Downloaded file paths.
+
         Raises:
             FileExistsError: ``dest`` already exists.
         """
@@ -170,6 +173,7 @@ class EbookSession(AbstractAsyncContextManager["EbookSession"]):
         src = Path(page["src"])
         url = f"{self._token.prefix}/{self.playfile.hashname}/{src}"
 
+        results = []
         if image:
             if convert:
                 if importlib.util.find_spec("PIL.Image") is not None:
@@ -217,6 +221,7 @@ class EbookSession(AbstractAsyncContextManager["EbookSession"]):
                 os.remove(temp.name)
             else:
                 os.replace(temp.name, dest)
+            results.append(dest)
 
         if audio:
             audio_src = page.get("audio", {}).get("src", "")
@@ -241,6 +246,9 @@ class EbookSession(AbstractAsyncContextManager["EbookSession"]):
                             os.remove(temp)
                             raise
                 os.replace(temp.name, dest)
+                results.append(dest)
+
+        return results
 
 
 def _convert(src: Union[str, Path], dest: Union[str, Path]) -> None:
