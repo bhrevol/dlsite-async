@@ -184,7 +184,7 @@ class EpubSession(AbstractAsyncContextManager["EpubSession"]):
         mkdir: bool = False,
         descramble: bool = False,
         force: bool = False,
-    ) -> None:
+    ) -> list[Path]:
         """Download one ebook page to the specified location.
 
         Args:
@@ -196,6 +196,9 @@ class EpubSession(AbstractAsyncContextManager["EpubSession"]):
             descramble: Descramble downloaded images (requires optional
                 ``dlsite-async[pil]`` dependency packages).
 
+        Returns:
+            Downloaded image paths (some pages may consist of multiple images).
+
         Raises:
             FileExistsError: destination file already exists.
         """
@@ -203,6 +206,7 @@ class EpubSession(AbstractAsyncContextManager["EpubSession"]):
             raise DlsiteError("CSR session has not been loaded")
         page_info = await self._download_page_info(index)
         dest_dir = Path(dest_dir)
+        results = []
         for part in page_info.parts:
             index_stem = f"{index:04}"
             part_stem = f"{index_stem}_{part.part_no}"
@@ -242,6 +246,8 @@ class EpubSession(AbstractAsyncContextManager["EpubSession"]):
                     self._descramble, temp.name, self._scramble_size, page_info.scramble
                 )
             os.replace(temp.name, dest)
+            results.append(dest)
+        return results
 
     async def _download_page_info(self, index: int) -> _PageInfo:
         assert self._token is not None
