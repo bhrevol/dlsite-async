@@ -110,5 +110,5 @@ def descramble(path: Union[str, Path], playfile: PlayFile) -> None:
         new_im.paste(tile, (x * tile_w, y * tile_w))
     # crop to actual image dimensions
     # (scrambled image is padded to align to 128 pixel tile boundary)
-    new_im.crop((0, 0, width, height))
+    new_im = new_im.crop((0, 0, width, height))
     new_im.save(path)
