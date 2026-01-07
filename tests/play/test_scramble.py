@@ -48,6 +48,7 @@ def test_descramble_crops_to_original_size(tmp_path: Path) -> None:
         assert result.size == (200, 160), f"Expected (200, 160), got {result.size}"
         # All pixels should be red (content), no white padding
         px = result.load()
+        assert px
         assert px[199, 159] == (255, 0, 0), "Bottom-right should be red content"
 
 
