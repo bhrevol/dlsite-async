@@ -251,6 +251,8 @@ List purchased works in order of purchase:
 ### DLsite Play comic/manga/book download
 
 DLsite Play uses several different web based viewers depending on the type of work and when it was originally added in DLsite.
+For a explanation of the difference in image qualities for each of these viewer types see the [wiki](https://github.com/bhrevol/dlsite-async/wiki/DLsite-Play-image-quality).
+
 The following examples show how to download each particular type.
 For an example of a generalized comic/manga/book downloader that handles all of these types see [dlsite-utils](https://github.com/bhrevol/dlsite-utils/blob/main/src/dlsite_utils/book.py).
 
