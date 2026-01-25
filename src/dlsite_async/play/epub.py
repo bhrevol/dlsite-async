@@ -9,7 +9,8 @@ from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass
 from enum import IntEnum
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any
+from collections.abc import Sequence
 
 from lxml import etree
 
@@ -72,7 +73,7 @@ class EpubSession(AbstractAsyncContextManager["EpubSession"]):
         play_api: "PlayAPI",
         ziptree: ZipTree,
         playfile: PlayFile,
-        workno: Optional[str] = None,
+        workno: str | None = None,
     ):
         self._play = play_api
         self.ziptree = ziptree
@@ -82,12 +83,12 @@ class EpubSession(AbstractAsyncContextManager["EpubSession"]):
             raise ValueError("workno must be specified")
         if not self.playfile.is_epub:
             raise ValueError("Unsupported epub type: {self.playfile.type}")
-        self._token: Optional[CSRToken] = None
-        self._total_page: Optional[int] = None
-        self._start_page: Optional[int] = None
-        self._version: Optional[str] = None
-        self._scramble_size: Optional[tuple[int, int]] = None
-        self._wake_up: Optional[int] = None
+        self._token: CSRToken | None = None
+        self._total_page: int | None = None
+        self._start_page: int | None = None
+        self._version: str | None = None
+        self._scramble_size: tuple[int, int] | None = None
+        self._wake_up: int | None = None
 
     @property
     def page_count(self) -> int:
@@ -181,7 +182,7 @@ class EpubSession(AbstractAsyncContextManager["EpubSession"]):
     async def download_page(
         self,
         index: int,
-        dest_dir: Union[str, Path],
+        dest_dir: str | Path,
         mkdir: bool = False,
         descramble: bool = False,
         force: bool = False,
@@ -306,7 +307,7 @@ class EpubSession(AbstractAsyncContextManager["EpubSession"]):
 
     def _descramble(
         self,
-        path: Union[str, Path],
+        path: str | Path,
         scramble_size: tuple[int, int],
         scramble: Sequence[int],
         **save_kwargs: Any,

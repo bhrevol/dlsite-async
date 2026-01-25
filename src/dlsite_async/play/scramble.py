@@ -13,7 +13,7 @@ import logging
 import math
 from pathlib import Path
 from random import Random
-from typing import Any, Union
+from typing import Any
 
 from .models import PlayFile
 
@@ -65,7 +65,7 @@ def _mt_tiles(seed: int, length: int) -> list[int]:
     return a
 
 
-def descramble(path: Union[str, Path], playfile: PlayFile, **save_kwargs: Any) -> None:
+def descramble(path: str | Path, playfile: PlayFile, **save_kwargs: Any) -> None:
     """Descramble the specified image file.
 
     Args:

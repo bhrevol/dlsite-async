@@ -6,7 +6,8 @@ import unicodedata
 from abc import ABC, abstractmethod
 from datetime import datetime
 from html import unescape
-from typing import Any, Iterable, Optional, cast
+from typing import Any, cast
+from collections.abc import Iterable
 
 from lxml import html
 from lxml.html import soupparser
@@ -240,7 +241,7 @@ def parse_login_token(content: str) -> str:
     """Parse login form token."""
     tree = soupparser.fromstring(_clean_xml(content))
     for input_ in cast(html.HtmlElement, tree.xpath('.//input[@name="_token"]')):
-        token: Optional[str] = input_.get("value")
+        token: str | None = input_.get("value")
         if token is not None:
             return token
     raise ScrapingError("Failed to find login form token.")

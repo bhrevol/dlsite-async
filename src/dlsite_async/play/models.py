@@ -5,7 +5,8 @@ from collections.abc import Mapping
 from dataclasses import dataclass, fields
 from datetime import datetime
 from functools import cached_property
-from typing import Any, Iterable, Iterator, Optional, Type, TypeVar, Union, cast
+from typing import Any, TypeVar, Union, cast
+from collections.abc import Iterable, Iterator
 
 from ..exceptions import DlsiteError
 from ..utils import fromisoformat
@@ -19,7 +20,7 @@ class _PlayModel(ABC):  # noqa: B024
     """Play API model."""
 
     @classmethod
-    def from_json(cls: Type[_PM], data: dict[str, Any]) -> _PM:
+    def from_json(cls: type[_PM], data: dict[str, Any]) -> _PM:
         """Construct a model from JSON response.
 
         Args:
@@ -118,7 +119,7 @@ class PlayFile(_PlayModel):
     def from_json(
         cls,
         data: dict[str, Any],
-        hashname: Optional[str] = None,
+        hashname: str | None = None,
     ) -> "PlayFile":
         """Construct a PlayFile from JSON response.
 
@@ -197,10 +198,10 @@ class ZipTree(_PlayModel, Mapping[str, PlayFile]):
     hash: str
     playfile: dict[str, PlayFile]
     tree: list[_TreeEntry]
-    workno: Optional[str] = None
-    version: Optional[str] = None
-    revision: Optional[str] = None
-    updated_at: Optional[datetime] = None
+    workno: str | None = None
+    version: str | None = None
+    revision: str | None = None
+    updated_at: datetime | None = None
 
     @classmethod
     def from_json(cls, data: dict[str, Any]) -> "ZipTree":
@@ -225,7 +226,7 @@ class ZipTree(_PlayModel, Mapping[str, PlayFile]):
         except KeyError as e:  # pragma: no cover
             raise DlsiteError("Got unexpected ZipTree data.") from e
         if "updated_at" in data:
-            updated_at: Optional[datetime] = datetime.strptime(
+            updated_at: datetime | None = datetime.strptime(
                 data["updated_at"], "%Y-%m-%d %H:%M:%S"
             )
         else:
@@ -245,7 +246,7 @@ class ZipTree(_PlayModel, Mapping[str, PlayFile]):
         return {path: playfile for path, playfile in self._walk(self.tree)}
 
     def _walk(
-        self, entries: Iterable[_TreeEntry], parent: Optional[str] = None
+        self, entries: Iterable[_TreeEntry], parent: str | None = None
     ) -> Iterator[tuple[str, PlayFile]]:
         for entry in entries:
             if isinstance(entry, _TreeFile):

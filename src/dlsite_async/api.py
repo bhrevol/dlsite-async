@@ -4,7 +4,7 @@ from contextlib import AbstractAsyncContextManager, AsyncExitStack
 from dataclasses import replace
 from datetime import datetime
 from netrc import netrc
-from typing import Any, Optional, TypeVar
+from typing import Any, TypeVar
 
 from aiohttp import ClientSession, ClientTimeout
 from aiohttp.client import _RequestContextManager
@@ -62,8 +62,8 @@ class BaseAPI(AbstractAsyncContextManager["_T"]):
 
     async def login(
         self,
-        login_id: Optional[str] = None,
-        password: Optional[str] = None,
+        login_id: str | None = None,
+        password: str | None = None,
         netrc_host: str = "dlsite.com",
     ) -> None:
         """Login to DLsite.
@@ -111,7 +111,7 @@ class DlsiteAPI(BaseAPI["DlsiteAPI"]):
         locale: Optional locale. Defaults to ``ja_JP``.
     """
 
-    def __init__(self, locale: Optional[str] = None, **kwargs: Any):
+    def __init__(self, locale: str | None = None, **kwargs: Any):
         super().__init__(cookies={"adultchecked": "1"})
         self.locale = locale
 
@@ -174,7 +174,7 @@ class DlsiteAPI(BaseAPI["DlsiteAPI"]):
         details = parse_work_html(html)
         return replace(work, **details)
 
-    async def _fetch_work_html(self, work: Work) -> Optional[str]:
+    async def _fetch_work_html(self, work: Work) -> str | None:
         urls = [
             (
                 f"https://www.dlsite.com/{work.site_id}/{typ}"
@@ -182,7 +182,7 @@ class DlsiteAPI(BaseAPI["DlsiteAPI"]):
             )
             for typ in ("work", "announce")
         ]
-        html: Optional[str] = None
+        html: str | None = None
         for url in urls:
             async with self.get(url) as response:
                 if response.status == 200:
@@ -209,7 +209,7 @@ class DlsiteAPI(BaseAPI["DlsiteAPI"]):
         info["maker_id"] = maker_id
         return Circle.from_dict(info)
 
-    async def _fetch_circle_html(self, maker_id: str) -> Optional[str]:
+    async def _fetch_circle_html(self, maker_id: str) -> str | None:
         url = (
             f"https://www.dlsite.com/maniax/circle/profile/=/maker_id/{maker_id}.html/"
         )

@@ -7,7 +7,7 @@ import tempfile
 from base64 import b64encode, b64decode
 from contextlib import AbstractAsyncContextManager
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from cryptography.hazmat.primitives import hashes, serialization
@@ -38,7 +38,7 @@ class EbookSession(AbstractAsyncContextManager["EbookSession"]):
         play_api: "PlayAPI",
         ziptree: ZipTree,
         playfile: PlayFile,
-        workno: Optional[str] = None,
+        workno: str | None = None,
     ):
         self._play = play_api
         self.ziptree = ziptree
@@ -48,7 +48,7 @@ class EbookSession(AbstractAsyncContextManager["EbookSession"]):
             raise ValueError("workno must be specified")
         if not self.playfile.is_ebook:
             raise ValueError("Unsupported ebook type: {self.playfile.type}")
-        self._token: Optional[ViewerToken] = None
+        self._token: ViewerToken | None = None
         self._meta: dict[str, Any] = {}
 
     @property
@@ -134,11 +134,11 @@ class EbookSession(AbstractAsyncContextManager["EbookSession"]):
     async def download_page(
         self,
         index: int,
-        dest_dir: Union[str, Path],
+        dest_dir: str | Path,
         mkdir: bool = False,
         audio: bool = True,
         image: bool = True,
-        convert: Optional[Literal["jpg", "png"]] = None,
+        convert: Literal["jpg", "png"] | None = None,
         force: bool = False,
         **save_kwargs: Any,
     ) -> list[Path]:
@@ -255,7 +255,7 @@ class EbookSession(AbstractAsyncContextManager["EbookSession"]):
         return results
 
 
-def _convert(src: Union[str, Path], dest: Union[str, Path], **save_kwargs: Any) -> None:
+def _convert(src: str | Path, dest: str | Path, **save_kwargs: Any) -> None:
     from PIL import Image
 
     dest = Path(dest)
