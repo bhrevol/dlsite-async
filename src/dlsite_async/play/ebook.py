@@ -255,7 +255,7 @@ class EbookSession(AbstractAsyncContextManager["EbookSession"]):
         return results
 
 
-def _convert(src: Union[str, Path], dest: Union[str, Path], **save_kwargs) -> None:
+def _convert(src: Union[str, Path], dest: Union[str, Path], **save_kwargs: Any) -> None:
     from PIL import Image
 
     dest = Path(dest)
