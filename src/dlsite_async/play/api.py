@@ -6,7 +6,8 @@ import tempfile
 from datetime import datetime
 from itertools import islice
 from pathlib import Path
-from typing import Any, AsyncIterator, Iterable, Iterator, Mapping, Optional, Union
+from typing import Any
+from collections.abc import AsyncIterator, Iterable, Iterator, Mapping
 
 from ..api import BaseAPI
 from ..work import AgeCategory, Work, WorkType
@@ -25,7 +26,7 @@ class PlayAPI(BaseAPI["PlayAPI"]):
         locale: Optional locale. Defaults to ``ja_JP``.
     """
 
-    def __init__(self, locale: Optional[str] = None, **kwargs: Any):
+    def __init__(self, locale: str | None = None, **kwargs: Any):
         super().__init__(**kwargs)
         self.locale = locale
 
@@ -71,7 +72,7 @@ class PlayAPI(BaseAPI["PlayAPI"]):
         self,
         token: DownloadToken,
         playfile: PlayFile,
-        dest: Union[str, Path],
+        dest: str | Path,
         mkdir: bool = False,
         force: bool = False,
         descramble: bool = False,
@@ -130,8 +131,8 @@ class PlayAPI(BaseAPI["PlayAPI"]):
 
     async def purchases(
         self,
-        last: Optional[datetime] = None,
-    ) -> AsyncIterator[tuple[Work, Optional[datetime]]]:
+        last: datetime | None = None,
+    ) -> AsyncIterator[tuple[Work, datetime | None]]:
         """Iterate over purchased works.
 
         Work information is populated using the Play API and may not match what would
@@ -218,7 +219,7 @@ def _batched(iterable: Iterable[Any], n: int) -> Iterator[tuple[Any, ...]]:
 
 def _parse_purchase(
     d: Mapping[str, Any], locale: str = "ja_JP"
-) -> tuple[Work, Optional[datetime]]:
+) -> tuple[Work, datetime | None]:
     """Construct Work from purchases API dictionary."""
     d = dict(d)
     d["age_category"] = AgeCategory[d["age_category"].upper()]
@@ -233,7 +234,7 @@ def _parse_purchase(
     if d.get("regist_date"):
         d["regist_date"] = fromisoformat(d["regist_date"])
     if d.get("sales_date"):
-        sales_date: Optional[datetime] = fromisoformat(d["sales_date"])
+        sales_date: datetime | None = fromisoformat(d["sales_date"])
     else:
         sales_date = None
     tags = d.get("tags") or []

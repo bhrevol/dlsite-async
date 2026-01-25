@@ -1,6 +1,7 @@
 """Test fixtures."""
 
-from typing import TYPE_CHECKING, AsyncGenerator
+from typing import TYPE_CHECKING
+from collections.abc import AsyncGenerator
 
 import pytest
 

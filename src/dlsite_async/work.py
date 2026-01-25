@@ -4,7 +4,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, fields
 from datetime import datetime
 from enum import Enum, IntEnum
-from typing import Any, Optional
+from typing import Any
 
 
 class AgeCategory(IntEnum):
@@ -64,33 +64,33 @@ class Work:
     maker_id: str
     work_name: str
     age_category: AgeCategory
-    circle: Optional[str] = None
-    brand: Optional[str] = None
-    publisher: Optional[str] = None
-    work_image: Optional[str] = None
-    regist_date: Optional[datetime] = None
-    work_type: Optional[WorkType] = None
-    book_type: Optional[BookType] = None
-    announce_date: Optional[datetime] = None
-    modified_date: Optional[datetime] = None
-    scenario: Optional[list[str]] = None
-    illustration: Optional[list[str]] = None
-    voice_actor: Optional[list[str]] = None
-    author: Optional[list[str]] = None
-    music: Optional[list[str]] = None
-    writer: Optional[list[str]] = None
-    genre: Optional[list[str]] = None
-    label: Optional[str] = None
-    event: Optional[list[str]] = None
-    file_format: Optional[list[str]] = None
-    file_size: Optional[str] = None
-    language: Optional[list[str]] = None
-    page_count: Optional[int] = None
-    description: Optional[str] = None
-    sample_images: Optional[list[str]] = None
-    work_name_masked: Optional[str] = None
-    title_name: Optional[str] = None
-    title_name_masked: Optional[str] = None
+    circle: str | None = None
+    brand: str | None = None
+    publisher: str | None = None
+    work_image: str | None = None
+    regist_date: datetime | None = None
+    work_type: WorkType | None = None
+    book_type: BookType | None = None
+    announce_date: datetime | None = None
+    modified_date: datetime | None = None
+    scenario: list[str] | None = None
+    illustration: list[str] | None = None
+    voice_actor: list[str] | None = None
+    author: list[str] | None = None
+    music: list[str] | None = None
+    writer: list[str] | None = None
+    genre: list[str] | None = None
+    label: str | None = None
+    event: list[str] | None = None
+    file_format: list[str] | None = None
+    file_size: str | None = None
+    language: list[str] | None = None
+    page_count: int | None = None
+    description: str | None = None
+    sample_images: list[str] | None = None
+    work_name_masked: str | None = None
+    title_name: str | None = None
+    title_name_masked: str | None = None
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> "Work":
@@ -99,12 +99,12 @@ class Work:
         return cls(**{k: v for k, v in d.items() if k in names})
 
     @property
-    def release_date(self) -> Optional[datetime]:
+    def release_date(self) -> datetime | None:
         """Release date."""
         return self.regist_date
 
     @property
-    def series(self) -> Optional[str]:
+    def series(self) -> str | None:
         """Series name.
 
         Set for backwards compatibility.
