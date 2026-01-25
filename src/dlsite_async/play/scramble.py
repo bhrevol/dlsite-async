@@ -8,6 +8,7 @@ the correct order.
 Images are shuffled using a Mersenne Twister PRNG with a known seed (see
 image viewer ``main.js``).
 """
+
 import logging
 import math
 from pathlib import Path
@@ -64,12 +65,13 @@ def _mt_tiles(seed: int, length: int) -> list[int]:
     return a
 
 
-def descramble(path: Union[str, Path], playfile: PlayFile) -> None:
+def descramble(path: Union[str, Path], playfile: PlayFile, **save_kwargs: Any) -> None:
     """Descramble the specified image file.
 
     Args:
         path: Image file path.
         playfile: Original image PlayFile.
+        save_kwargs: Additional arguments to be passed into Pillow ``Image.save()``.
     """
     try:
         from PIL import Image
@@ -77,6 +79,7 @@ def descramble(path: Union[str, Path], playfile: PlayFile) -> None:
         logger.warn("Image descramble requires installation with dlsite-async[pil]")
         return
 
+    path = Path(path)
     with Image.open(path) as im:
         tile_w = 128
         optimized = playfile.files["optimized"]
@@ -111,4 +114,6 @@ def descramble(path: Union[str, Path], playfile: PlayFile) -> None:
     # crop to actual image dimensions
     # (scrambled image is padded to align to 128 pixel tile boundary)
     new_im = new_im.crop((0, 0, width, height))
-    new_im.save(path)
+    if path.suffix.lower() in (".jpg", ".jpeg") and "quality" not in save_kwargs:
+        save_kwargs["quality"] = "keep"
+    new_im.save(path, **save_kwargs)

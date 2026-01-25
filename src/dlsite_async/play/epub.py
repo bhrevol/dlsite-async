@@ -1,4 +1,5 @@
 """DLsite Play CSR viewer."""
+
 import asyncio
 import logging
 import os
@@ -184,6 +185,7 @@ class EpubSession(AbstractAsyncContextManager["EpubSession"]):
         mkdir: bool = False,
         descramble: bool = False,
         force: bool = False,
+        **save_kwargs: Any,
     ) -> list[Path]:
         """Download one ebook page to the specified location.
 
@@ -195,6 +197,8 @@ class EpubSession(AbstractAsyncContextManager["EpubSession"]):
             force: Overwrite existing destination file if it already exists.
             descramble: Descramble downloaded images (requires optional
                 ``dlsite-async[pil]`` dependency packages).
+            save_kwargs: Additional arguments to be passed into Pillow ``Image.save()``.
+                Only applicable when ``descramble`` is ``True``.
 
         Returns:
             Downloaded image paths (some pages may consist of multiple images).
@@ -243,7 +247,11 @@ class EpubSession(AbstractAsyncContextManager["EpubSession"]):
                         raise
             if descramble and part.scramble and self._scramble_size is not None:
                 await asyncio.to_thread(
-                    self._descramble, temp.name, self._scramble_size, page_info.scramble
+                    self._descramble,
+                    temp.name,
+                    self._scramble_size,
+                    page_info.scramble,
+                    **save_kwargs,
                 )
             os.replace(temp.name, dest)
             results.append(dest)
@@ -301,12 +309,14 @@ class EpubSession(AbstractAsyncContextManager["EpubSession"]):
         path: Union[str, Path],
         scramble_size: tuple[int, int],
         scramble: Sequence[int],
+        **save_kwargs: Any,
     ) -> None:
         try:
             from PIL import Image
         except ImportError:
             logger.warn("Image descramble requires installation with dlsite-async[pil]")
             return
+        path = Path(path)
         scramble_w, scramble_h = scramble_size
         tile_w, tile_h = (264, 368)
         with Image.open(path) as im:
@@ -330,4 +340,6 @@ class EpubSession(AbstractAsyncContextManager["EpubSession"]):
             x = i % scramble_w
             y = i // scramble_h
             new_im.paste(tile, (x * tile_w, y * tile_h))
-        new_im.save(path)
+        if path.suffix.lower() in (".jpg", ".jpeg") and "quality" not in save_kwargs:
+            save_kwargs["quality"] = "keep"
+        new_im.save(path, **save_kwargs)
