@@ -305,10 +305,11 @@ Instead, you need to first load the `page` array for the PDF entry and then crea
 ...                 page_playfile = PlayFile(playfile.length, "image", page, "")
 ...                 orig_path, _ = os.path.splitext(filename)
 ...                 _, ext = os.path.splitext(page_playfile.optimized_name)
+...                 dest = os.path.join(orig_path, f"{i:03}{ext}")
 ...                 await play.download_playfile(
 ...                     token,
 ...                     page_playfile,
-...                     output_dir / orig_path / f"{i:03}{ext}",
+...                     dest,
 ...                     mkdir=True,
 ...                     descramble=True,
 ...                 )
