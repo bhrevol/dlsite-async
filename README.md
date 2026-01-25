@@ -248,13 +248,15 @@ List purchased works in order of purchase:
  (Work(...), datetime.datetime(2024, 7, 16, 14, 55, 40, tzinfo=datetime.timezone.utc)),]
 ```
 
-### DLsite Play comic/manga/book download
+## DLsite Play comic/manga/book download
 
 DLsite Play uses several different web based viewers depending on the type of work and when it was originally added in DLsite.
 For a explanation of the difference in image qualities for each of these viewer types see the [wiki](https://github.com/bhrevol/dlsite-async/wiki/DLsite-Play-image-quality).
 
-The following examples show how to download each particular type.
+The following examples show how to download images from each viewer (with the corresponding `PlayFile.type` values noted in parentheses).
 For an example of a generalized comic/manga/book downloader that handles all of these types see [dlsite-utils](https://github.com/bhrevol/dlsite-utils/blob/main/src/dlsite_utils/book.py).
+
+### Legacy image viewer (`image`, `pdf`)
 
 Download web-optimized images from a manga/comic work to the current working directory
 (Note that using `descramble=True` requires `dlsite_async[pil]`):
@@ -280,6 +282,41 @@ Download web-optimized images from a manga/comic work to the current working dir
 ...
 >>> asyncio.run(f())
 ```
+
+For `playfile.type == "pdf"`, the PDF entry cannot be directly downloaded.
+Instead, you need to first load the `page` array for the PDF entry and then create a `PlayFile(type="image")` for each page in the PDF which can then be downloaded.
+
+*(Note that only images for each page can be downloaded, it is not possible to download a `.pdf` file for these works)*
+
+```py
+>>> import os
+>>> import asyncio
+>>> from dlsite_async import PlayAPI
+>>> async def f():
+...     async with PlayAPI() as play_api:
+...         await play_api.login(username, password)
+...         token = await play_api.download_token("BJ277832")
+...         tree = await play_api.ziptree(token)
+...         for filename, playfile in tree.items():
+...             if playfile.type != "pdf":
+...                 continue
+...             pages = playfile.files.get("page", [])
+...             for i, page in enumerate(pages):
+...                 page_playfile = PlayFile(playfile.length, "image", page, "")
+...                 orig_path, _ = os.path.splitext(filename)
+...                 _, ext = os.path.splitext(page_playfile.optimized_name)
+...                 await play.download_playfile(
+...                     token,
+...                     page_playfile,
+...                     output_dir / orig_path / f"{i:03}{ext}",
+...                     mkdir=True,
+...                     descramble=True,
+...                 )
+...
+>>> asyncio.run(f())
+```
+
+### Ebook viewer (`ebook_fixed`, `ebook_webtoon`, `voicecomic_v2`)
 
 Download the first page from a Comic Viewer or Webtoon ebook work to the current working
 directory (as a web-optimized WebP image):
@@ -328,7 +365,9 @@ directory (with web-optimized images converted to JPEG):
 >>> asyncio.run(f())
 ```
 
-Download all pages from a CSR Epub Viewer (`.dlst`) work to the current working directory:
+### Epub viewer (`epub`)
+
+Download all pages from a CSR Epub Viewer work to the current working directory:
 
 *(Note that using `descramble=True` requires `dlsite_async[pil]`)*
 
