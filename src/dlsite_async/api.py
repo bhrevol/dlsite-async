@@ -1,4 +1,5 @@
 """DLsite API classes."""
+
 from contextlib import AbstractAsyncContextManager, AsyncExitStack
 from dataclasses import replace
 from datetime import datetime
@@ -210,8 +211,7 @@ class DlsiteAPI(BaseAPI["DlsiteAPI"]):
 
     async def _fetch_circle_html(self, maker_id: str) -> Optional[str]:
         url = (
-            f"https://www.dlsite.com/maniax/circle/profile"
-            f"/=/maker_id/{maker_id}.html/"
+            f"https://www.dlsite.com/maniax/circle/profile/=/maker_id/{maker_id}.html/"
         )
         async with self.get(url) as response:
             if response.status == 200:

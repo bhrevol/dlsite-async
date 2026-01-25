@@ -1,4 +1,5 @@
 """Utils tests."""
+
 import pytest
 
 from dlsite_async.exceptions import InvalidIDError

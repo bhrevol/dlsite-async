@@ -1,4 +1,5 @@
 """Circle tests."""
+
 import pytest
 
 from dlsite_async.circle import MakerType

@@ -1,4 +1,5 @@
 """Sphinx configuration."""
+
 project = "DLsite Async"
 author = "byeonhyeok"
 copyright = "2022, byeonhyeok"
