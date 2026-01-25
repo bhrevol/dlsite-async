@@ -1,4 +1,5 @@
 """DLsite Play API tests."""
+
 import re
 from datetime import datetime, timedelta, timezone
 

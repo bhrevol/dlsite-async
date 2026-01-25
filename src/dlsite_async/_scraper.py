@@ -1,4 +1,5 @@
 """HTML scraper."""
+
 import logging
 import re
 import unicodedata

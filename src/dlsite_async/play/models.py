@@ -1,4 +1,5 @@
 """Play API response models."""
+
 from abc import ABC
 from collections.abc import Mapping
 from dataclasses import dataclass, fields
@@ -142,7 +143,7 @@ class _TreeFile(_PlayModel):
 
 @dataclass(frozen=True)
 class _HiddenFile(_TreeFile):
-    "ZipTree hidden file entry." ""
+    "ZipTree hidden file entry."
 
 
 @dataclass(frozen=True)

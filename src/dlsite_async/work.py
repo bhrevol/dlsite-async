@@ -1,4 +1,5 @@
 """DLsite work classes."""
+
 from collections.abc import Mapping
 from dataclasses import dataclass, fields
 from datetime import datetime
