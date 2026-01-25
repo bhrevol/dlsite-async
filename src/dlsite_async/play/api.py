@@ -1,4 +1,5 @@
 """DLsite Play API classes."""
+
 import logging
 import os
 import tempfile
@@ -74,6 +75,7 @@ class PlayAPI(BaseAPI["PlayAPI"]):
         mkdir: bool = False,
         force: bool = False,
         descramble: bool = False,
+        **save_kwargs: Any,
     ) -> None:
         """Download playfile to the specified location.
 
@@ -86,6 +88,8 @@ class PlayAPI(BaseAPI["PlayAPI"]):
             force: Overwrite `dest` if it already exists.
             descramble: Descramble downloaded images (requires optional
                 ``dlsite-async[pil]`` dependency packages).
+            save_kwargs: Additional arguments to be passed into Pillow ``Image.save()``.
+                Only applicable when ``descramble`` is ``True``.
 
         Raises:
             FileExistsError: ``dest`` already exists.
@@ -122,7 +126,7 @@ class PlayAPI(BaseAPI["PlayAPI"]):
             and playfile.files["optimized"].get("crypt")
             and descramble
         ):
-            _descramble(dest, playfile)
+            _descramble(dest, playfile, **save_kwargs)
 
     async def purchases(
         self,

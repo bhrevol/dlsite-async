@@ -1,4 +1,5 @@
 """DLsite Play ebook viewer."""
+
 import os
 import importlib.util
 import logging
@@ -139,6 +140,7 @@ class EbookSession(AbstractAsyncContextManager["EbookSession"]):
         image: bool = True,
         convert: Optional[Literal["jpg", "png"]] = None,
         force: bool = False,
+        **save_kwargs: Any,
     ) -> list[Path]:
         """Download one ebook page to the specified location.
 
@@ -155,6 +157,8 @@ class EbookSession(AbstractAsyncContextManager["EbookSession"]):
                 ``dlsite-async[pil]`` dependency packages). By default, images are
                 downloaded in the original DLsite Play Viewer WebP format. Only applicable
                 when ``image`` is ``True``.
+            save_kwargs: Additional arguments to be passed into Pillow ``Image.save()``.
+                Only applicable when ``convert`` is ``True``.
 
         Returns:
             Downloaded file paths.
@@ -217,7 +221,7 @@ class EbookSession(AbstractAsyncContextManager["EbookSession"]):
                         os.remove(temp.name)
                         raise
             if convert:
-                _convert(temp.name, dest)
+                _convert(temp.name, dest, **save_kwargs)
                 os.remove(temp.name)
             else:
                 os.replace(temp.name, dest)
@@ -251,8 +255,11 @@ class EbookSession(AbstractAsyncContextManager["EbookSession"]):
         return results
 
 
-def _convert(src: Union[str, Path], dest: Union[str, Path]) -> None:
+def _convert(src: Union[str, Path], dest: Union[str, Path], **save_kwargs: Any) -> None:
     from PIL import Image
 
+    dest = Path(dest)
     with Image.open(src) as im:
-        im.save(dest)
+        if dest.suffix.lower() in (".jpg", ".jpeg") and "quality" not in save_kwargs:
+            save_kwargs["quality"] = 95
+        im.save(dest, **save_kwargs)
