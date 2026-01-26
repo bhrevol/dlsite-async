@@ -43,7 +43,7 @@ jobs:
         run: |
           pdm publish --no-build
 
-      - name: Publish package on TestPyPI
-        if: github.event.action != 'published'
-        run: |
-          pdm publish --no-build --repository testpypi
+      # - name: Publish package on TestPyPI
+      #   if: github.event.action != 'published'
+      #   run: |
+      #     pdm publish --no-build --repository testpypi
