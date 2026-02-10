@@ -802,13 +802,13 @@ files = [
 
 [[package]]
 name = "filelock"
-version = "3.20.1"
+version = "3.20.3"
 requires_python = ">=3.10"
 summary = "A platform independent file lock."
 groups = ["dev", "lint", "safety"]
 files = [
-    {file = "filelock-3.20.1-py3-none-any.whl", hash = "sha256:15d9e9a67306188a44baa72f569d2bfd803076269365fdea0934385da4dc361a"},
-    {file = "filelock-3.20.1.tar.gz", hash = "sha256:b8360948b351b80f420878d8516519a2204b07aefcdcfd24912a5d33127f188c"},
+    {file = "filelock-3.20.3-py3-none-any.whl", hash = "sha256:4b0dda527ee31078689fc205ec4f1c1bf7d56cf88b6dc9426c4f230e46c2dce1"},
+    {file = "filelock-3.20.3.tar.gz", hash = "sha256:18c57ee915c7ec61cff0ecf7f0f869936c7c30191bb0cf406f1341778d0834e1"},
 ]
 
 [[package]]
@@ -997,13 +997,13 @@ files = [
 
 [[package]]
 name = "humanize"
-version = "4.14.0"
+version = "4.15.0"
 requires_python = ">=3.10"
 summary = "Python humanize utilities"
 groups = ["dev"]
 files = [
-    {file = "humanize-4.14.0-py3-none-any.whl", hash = "sha256:d57701248d040ad456092820e6fde56c930f17749956ac47f4f655c0c547bfff"},
-    {file = "humanize-4.14.0.tar.gz", hash = "sha256:2fa092705ea640d605c435b1ca82b2866a1b601cdf96f076d70b79a855eba90d"},
+    {file = "humanize-4.15.0-py3-none-any.whl", hash = "sha256:b1186eb9f5a9749cd9cb8565aee77919dd7c8d076161cf44d70e59e3301e1769"},
+    {file = "humanize-4.15.0.tar.gz", hash = "sha256:1dd098483eb1c7ee8e32eb2e99ad1910baefa4b75c3aff3a82f4d78688993b10"},
 ]
 
 [[package]]
@@ -1665,7 +1665,7 @@ files = [
 
 [[package]]
 name = "nox"
-version = "2025.11.12"
+version = "2026.2.9"
 requires_python = ">=3.8"
 summary = "Flexible test automation."
 groups = ["dev"]
@@ -1675,15 +1675,14 @@ dependencies = [
     "colorlog<7,>=2.6.1",
     "dependency-groups>=1.1",
     "humanize>=4",
-    "packaging>=20.9; python_version < \"3.10\"",
-    "packaging>=21; python_version >= \"3.10\"",
+    "packaging>=22",
     "tomli>=1.1; python_version < \"3.11\"",
     "virtualenv>=20.14.1; python_version < \"3.10\"",
     "virtualenv>=20.15; python_version >= \"3.10\"",
 ]
 files = [
-    {file = "nox-2025.11.12-py3-none-any.whl", hash = "sha256:707171f9f63bc685da9d00edd8c2ceec8405b8e38b5fb4e46114a860070ef0ff"},
-    {file = "nox-2025.11.12.tar.gz", hash = "sha256:3d317f9e61f49d6bde39cf2f59695bb4e1722960457eee3ae19dacfe03c07259"},
+    {file = "nox-2026.2.9-py3-none-any.whl", hash = "sha256:1b7143bc8ecdf25f2353201326152c5303ae4ae56ca097b1fb6179ad75164c47"},
+    {file = "nox-2026.2.9.tar.gz", hash = "sha256:1bc8a202ee8cd69be7aaada63b2a7019126899a06fc930a7aee75585bf8ee41b"},
 ]
 
 [[package]]
@@ -2800,20 +2799,21 @@ files = [
 
 [[package]]
 name = "virtualenv"
-version = "20.35.4"
+version = "20.36.1"
 requires_python = ">=3.8"
 summary = "Virtual Python Environment builder"
 groups = ["dev", "lint"]
 dependencies = [
     "distlib<1,>=0.3.7",
-    "filelock<4,>=3.12.2",
+    "filelock<4,>=3.16.1; python_version < \"3.10\"",
+    "filelock<4,>=3.20.1; python_version >= \"3.10\"",
     "importlib-metadata>=6.6; python_version < \"3.8\"",
     "platformdirs<5,>=3.9.1",
     "typing-extensions>=4.13.2; python_version < \"3.11\"",
 ]
 files = [
-    {file = "virtualenv-20.35.4-py3-none-any.whl", hash = "sha256:c21c9cede36c9753eeade68ba7d523529f228a403463376cf821eaae2b650f1b"},
-    {file = "virtualenv-20.35.4.tar.gz", hash = "sha256:643d3914d73d3eeb0c552cbb12d7e82adf0e504dbf86a3182f8771a153a1971c"},
+    {file = "virtualenv-20.36.1-py3-none-any.whl", hash = "sha256:575a8d6b124ef88f6f51d56d656132389f961062a9177016a50e4f507bbcc19f"},
+    {file = "virtualenv-20.36.1.tar.gz", hash = "sha256:8befb5c81842c641f8ee658481e42641c68b5eab3521d8e092d18320902466ba"},
 ]
 
 [[package]]
