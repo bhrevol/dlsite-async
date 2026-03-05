@@ -3,10 +3,11 @@
 from abc import ABC
 from collections.abc import Mapping
 from dataclasses import dataclass, fields
+from collections.abc import Iterable, Iterator
 from datetime import datetime
 from functools import cached_property
 from typing import Any, TypeVar, Union, cast
-from collections.abc import Iterable, Iterator
+from typing_extensions import deprecated
 
 from ..exceptions import DlsiteError
 from ..utils import fromisoformat
@@ -112,8 +113,17 @@ class PlayFile(_PlayModel):
         return self.type in {"ebook_fixed", "ebook_webtoon", "voicecomic_v2"}
 
     @property
+    @deprecated("PlayFile.is_epub is deprecated, use PlayFile.is_epub_fixed instead.")
     def is_epub(self) -> bool:
+        return self.is_epub_fixed
+
+    @property
+    def is_epub_fixed(self) -> bool:
         return self.type == "epub"
+
+    @property
+    def is_epub_reflowable(self) -> bool:
+        return self.type == "epub_reflowable"
 
     @classmethod
     def from_json(
@@ -325,3 +335,15 @@ class CSRToken(_PlayModel):
     param: str
     workno: str
     customer_id: str
+
+
+@dataclass(frozen=True)
+class CSRReflowableToken(_PlayModel):
+    """CSR-R viewer API download token."""
+
+    vt: str
+    c: str
+    base_url: str
+    account_id: str
+    customer_id: str
+    key: bytes

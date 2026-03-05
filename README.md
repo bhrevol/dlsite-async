@@ -366,26 +366,69 @@ directory (with web-optimized images converted to JPEG):
 >>> asyncio.run(f())
 ```
 
-### Epub viewer (`epub`)
+### Fixed-layout epub viewer (`epub`)
 
-Download all pages from a CSR Epub Viewer work to the current working directory:
+Download all page images from a CSR fixed-layout Epub Viewer work to the current working directory:
 
 *(Note that using `descramble=True` requires `dlsite_async[pil]`)*
 
 ```py
 >>> import os
 >>> import asyncio
->>> from dlsite_async import EpubSession, PlayAPI
+>>> from dlsite_async import EpubFixedSession, PlayAPI
 >>> async def f():
 ...     async with PlayAPI() as play_api:
 ...         await play_api.login(username, password)
 ...         token = await play_api.download_token("BJ01755973")
 ...         tree = await play_api.ziptree(token)
 ...         for filename, playfile in tree.items():
-...             if not playfile.is_epub:
+...             if not playfile.is_epub_fixed:
 ...                 continue
 ...             epub_dir, _ = os.path.splitext(filename)
-...             async with EpubSession(play_api, tree, playfile) as epub:
+...             async with EpubFixedSession(play_api, tree, playfile) as epub:
+...                 for i in range(epub.page_count):
+...                     await epub.download_page(
+...                         i, epub_dir, mkdir=True, force=True, descramble=True
+...                     )
+>>> asyncio.run(f())
+```
+
+### Reflowable-layout epub viewer (`epub_reflowable`)
+
+Download CSR-R reflowable-layout Epub Viewer work as `.epub` file to the current working directory:
+
+```py
+>>> import os
+>>> import asyncio
+>>> from dlsite_async import EpubReflowableSession, PlayAPI
+>>> async def f():
+...     async with PlayAPI() as play_api:
+...         await play_api.login(username, password)
+...         token = await play_api.download_token("BJ01755973")
+...         tree = await play_api.ziptree(token)
+...         for filename, playfile in tree.items():
+...             if not playfile.is_epub_reflowable:
+...                 continue
+...             epub_dir, _ = os.path.splitext(filename)
+...             async with EpubReflowableSession(play_api, tree, playfile) as epub:
+...                     await epub.download_epub(epub_dir, mkdir=True, force=True)
+>>> asyncio.run(f())
+```
+
+```py
+>>> import os
+>>> import asyncio
+>>> from dlsite_async import EpubFixedSession, PlayAPI
+>>> async def f():
+...     async with PlayAPI() as play_api:
+...         await play_api.login(username, password)
+...         token = await play_api.download_token("BJ01755973")
+...         tree = await play_api.ziptree(token)
+...         for filename, playfile in tree.items():
+...             if not playfile.is_epub_fixed:
+...                 continue
+...             epub_dir, _ = os.path.splitext(filename)
+...             async with EpubFixedSession(play_api, tree, playfile) as epub:
 ...                 for i in range(epub.page_count):
 ...                     await epub.download_page(
 ...                         i, epub_dir, mkdir=True, force=True, descramble=True

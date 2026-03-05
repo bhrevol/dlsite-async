@@ -9,8 +9,8 @@ from html import unescape
 from typing import Any, cast
 from collections.abc import Iterable
 
+import lxml.html.soupparser as soupparser
 from lxml import html
-from lxml.html import soupparser
 
 from .exceptions import ScrapingError
 
