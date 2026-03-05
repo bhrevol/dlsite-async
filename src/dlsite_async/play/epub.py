@@ -1,21 +1,30 @@
 """DLsite Play CSR viewer."""
 
 import asyncio
+import json
 import logging
 import os
 import tempfile
 import time
+import urllib.parse
+import zipfile
+from base64 import b64encode, b64decode
+from collections.abc import Iterable, Iterator, Sequence
 from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass
+from email.utils import parsedate_to_datetime
 from enum import IntEnum
-from pathlib import Path
-from typing import TYPE_CHECKING, Any
-from collections.abc import Sequence
+from pathlib import Path, PurePosixPath
+from typing import TYPE_CHECKING, Any, Self
+from typing_extensions import deprecated
 
+from aiohttp import ClientResponseError
+from cryptography.hazmat.primitives.asymmetric import padding, rsa
+from cryptography.hazmat.primitives import hashes, serialization
 from lxml import etree
 
 from ..exceptions import DlsiteError
-from .models import CSRToken, PlayFile, ZipTree
+from .models import CSRReflowableToken, CSRToken, PlayFile, ZipTree
 
 if TYPE_CHECKING:
     from .api import PlayAPI
@@ -57,8 +66,21 @@ class _PageInfo:
     scramble: list[int]
 
 
-class EpubSession(AbstractAsyncContextManager["EpubSession"]):
-    """DLsite Play CSR (dlst epub) Viewer Session.
+@dataclass(frozen=True)
+class _PreprocessSettings:
+    obfuscate_text: bool
+    obfuscate_image: bool
+    obfuscate_image_key: int | None = None
+
+    @classmethod
+    def from_json(cls, data: dict[str, Any]) -> Self:
+        return cls(
+            data["obfuscateText"], data["obfuscateImage"], data.get("obfuscateImageKey")
+        )
+
+
+class EpubFixedSession(AbstractAsyncContextManager["EpubFixedSession"]):
+    """DLsite Play CSR (fixed-layout epub) Viewer Session.
 
     Args:
         play_api: Parent PlayAPI session.
@@ -81,7 +103,7 @@ class EpubSession(AbstractAsyncContextManager["EpubSession"]):
         self.workno = workno or ziptree.workno
         if not self.workno:
             raise ValueError("workno must be specified")
-        if not self.playfile.is_epub:
+        if not self.playfile.is_epub_fixed:
             raise ValueError("Unsupported epub type: {self.playfile.type}")
         self._token: CSRToken | None = None
         self._total_page: int | None = None
@@ -97,7 +119,7 @@ class EpubSession(AbstractAsyncContextManager["EpubSession"]):
     def __len__(self) -> int:
         return self.page_count
 
-    async def __aenter__(self) -> "EpubSession":
+    async def __aenter__(self) -> "EpubFixedSession":
         await self.load()
         return self
 
@@ -344,3 +366,436 @@ class EpubSession(AbstractAsyncContextManager["EpubSession"]):
         if path.suffix.lower() in (".jpg", ".jpeg") and "quality" not in save_kwargs:
             save_kwargs["quality"] = "keep"
         new_im.save(path, **save_kwargs)
+
+
+@deprecated("EpubSession is deprecated, use EpubFixedSession instead.")
+class EpubSession(EpubFixedSession):
+    pass
+
+
+class EpubReflowableSession(AbstractAsyncContextManager["EpubReflowableSession"]):
+    """DLsite Play CSR-R (reflowable epub) Viewer Session.
+
+    Args:
+        play_api: Parent PlayAPI session.
+        ziptree: DLsite Play ZipTree for the work. Must contain an ``epub`` playfile
+            entry.
+        playfile: PlayFile entry for the epub to open in ``ziptree``.
+        workno: DLsite product ID for the epub work (defaults to `ziptree.workno`).
+    """
+
+    def __init__(
+        self,
+        play_api: "PlayAPI",
+        ziptree: ZipTree,
+        playfile: PlayFile,
+        workno: str | None = None,
+    ):
+        self._play = play_api
+        self.ziptree = ziptree
+        self.playfile = playfile
+        self.workno = workno or ziptree.workno
+        if not self.workno:
+            raise ValueError("workno must be specified")
+        if not self.playfile.is_epub_reflowable:
+            raise ValueError("Unsupported epub type: {self.playfile.type}")
+        self._token: CSRReflowableToken | None = None
+        self._deobfuscators: dict[int, "_Deobfuscator"] = {}
+
+    @property
+    def page_count(self) -> int:
+        return self._total_page if self._total_page is not None else 0
+
+    def __len__(self) -> int:
+        return self.page_count
+
+    async def __aenter__(self) -> "EpubReflowableSession":
+        await self.load()
+        return self
+
+    async def __aexit__(self, *args: Any) -> None:
+        await self.close()
+
+    async def load(self) -> None:
+        if self._token is None:
+            self._token = await self._download_token()
+
+    async def close(self) -> None:
+        self._token = None
+        self._total_page = None
+        self._start_page = None
+        self._version = None
+        self._scramble_size = None
+
+    async def _download_token(self) -> CSRReflowableToken:
+        """Return a download token for this work."""
+        private_key = rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=4096,
+        )
+        hashname, _ = os.path.splitext(self.playfile.hashname or "")
+        payload = {
+            "workno": self.workno,
+            "hashname": hashname,
+            "revision": self.ziptree.revision or "",
+            "public_key": b64encode(
+                private_key.public_key().public_bytes(
+                    encoding=serialization.Encoding.DER,
+                    format=serialization.PublicFormat.SubjectPublicKeyInfo,
+                )
+            ).decode(),
+            "play_type": "epub_reflowable",
+        }
+        url = "https://play.dlsite.com/api/v3/csr/reflowable/token"
+        async with self._play.post(url, json=payload) as response:
+            data = await response.json()
+            values = data["values"]
+
+            ciphertext = b64decode(values["key"])
+            plaintext = private_key.decrypt(
+                ciphertext,
+                padding.OAEP(
+                    mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                    algorithm=hashes.SHA256(),
+                    label=None,
+                ),
+            )
+            values["key"] = bytes.fromhex(plaintext.decode())
+            return CSRReflowableToken.from_json(values)
+
+    def _decrypt(self, data: bytes, offset: int = 0) -> bytes:
+        if self._token is None:
+            raise DlsiteError("CSR-R token must be loaded")
+        if not self._token.key:
+            return data
+        return bytes(
+            data[i] ^ self._token.key[(offset + i) % len(self._token.key)]
+            for i in range(len(data))
+        )
+
+    async def download_epub(
+        self,
+        dest_dir: str | Path,
+        mkdir: bool = False,
+        force: bool = False,
+        **save_kwargs: Any,
+    ) -> Path:
+        """Download epub file to the specified location.
+
+        Args:
+            dest_dir: Destination directory to write the downloaded file.
+            mkdir: Create ``dest_dir`` and parent directories if they do not already
+                exist.
+            force: Overwrite existing destination file if it already exists.
+
+        Returns:
+            Downloaded file path.
+
+        Raises:
+            FileExistsError: destination file already exists.
+        """
+        if self._token is None:
+            raise DlsiteError("CSR-R session has not been loaded")
+        dest = Path(dest_dir) / f"{self.workno}.epub"
+        if not force and dest.exists():
+            raise FileExistsError(str(dest))
+        if mkdir and not dest.parent.exists():
+            dest.parent.mkdir(parents=True)
+        zinfos: dict[Path, zipfile.ZipInfo] = {}
+
+        with tempfile.TemporaryDirectory(prefix=dest.name, dir=dest.parent) as tempdir:
+            tmp_dir = Path(tempdir)
+
+            def _add_entry(entry: tuple[Path, zipfile.ZipInfo]) -> None:
+                path, zinfo = entry
+                if path in zinfos:
+                    return
+                zinfos[path] = zinfo
+
+            _add_entry(await self._download_epub_entry(tmp_dir, "mimetype"))
+            preprocess_settings, _ = await self._download_epub_entry(
+                tmp_dir, "preprocess-settings.json"
+            )
+            with open(preprocess_settings) as f:
+                settings = _PreprocessSettings.from_json(
+                    await asyncio.to_thread(json.load, f)
+                )
+            container, zinfo = await self._download_epub_entry(
+                tmp_dir, "META-INF/container.xml"
+            )
+            _add_entry((container, zinfo))
+            opf_entry = await self._get_rootfile(container)
+            opf, zinfo = await self._download_epub_entry(tmp_dir, opf_entry)
+            _add_entry((opf, zinfo))
+            for entry in await self._download_epub_contents(tmp_dir, opf, settings):
+                _add_entry(entry)
+            await asyncio.to_thread(
+                self._zip_epub,
+                dest,
+                zinfos.items(),
+            )
+        return dest
+
+    def _zip_epub(
+        self, dest: Path, entries: Iterable[tuple[Path, zipfile.ZipInfo]]
+    ) -> None:
+        with tempfile.NamedTemporaryFile(
+            prefix=dest.stem, suffix=dest.suffix, dir=dest.parent, delete=False
+        ) as temp:
+            with zipfile.ZipFile(temp, mode="w") as zf:
+                for path, zinfo in entries:
+                    if zinfo.is_dir():
+                        zf.mkdir(zinfo)
+                    else:
+                        with open(path, "rb") as f:
+                            zf.writestr(zinfo, f.read())
+        os.replace(temp.name, dest)
+
+    async def _download_epub_entry(
+        self, tmp_dir: Path, epub_entry: str
+    ) -> tuple[Path, zipfile.ZipInfo]:
+        if self._token is None:
+            raise DlsiteError("CSR-R session has not been loaded")
+        dest = tmp_dir / epub_entry
+        if not dest.parent.exists():
+            dest.parent.mkdir(parents=True)
+        url = f"{self._token.base_url}/{epub_entry}"
+        async with self._play.get(
+            url,
+            headers={
+                "Authorization": f"Bearer {urllib.parse.quote_plus(self._token.vt)}"
+            },
+            timeout=self._play._DL_TIMEOUT,
+        ) as response:
+            with tempfile.NamedTemporaryFile(
+                prefix=dest.stem, suffix=dest.suffix, dir=dest.parent, delete=False
+            ) as temp:
+                offset = 0
+                async for chunk in response.content.iter_chunked(
+                    self._play._DL_CHUNK_SIZE
+                ):
+                    temp.write(self._decrypt(chunk, offset=offset))
+                    offset += len(chunk)
+            last_modified = response.headers.get("Last-Modified")
+            if last_modified:
+                dt = parsedate_to_datetime(last_modified)
+                os.utime(temp.name, (time.time(), dt.timestamp()))
+        os.replace(temp.name, dest)
+        zipinfo = zipfile.ZipInfo.from_file(
+            dest, arcname=str(PurePosixPath(dest.relative_to(tmp_dir)))
+        )
+        return dest, zipinfo
+
+    @staticmethod
+    async def _get_rootfile(container_path: Path) -> str:
+        ns = {"c": "urn:oasis:names:tc:opendocument:xmlns:container"}
+        root = await asyncio.to_thread(etree.parse, str(container_path))
+        rootfile = root.find(".//c:rootfile", namespaces=ns)
+        if rootfile is None:
+            raise ValueError("epub container does not contain OPF rootfile")
+        full_path = rootfile.get("full-path")
+        if not full_path:
+            raise ValueError("epub container rootfile missing full-path")
+        return full_path
+
+    async def _download_epub_contents(
+        self, tmp_dir: Path, opf_path: Path, settings: _PreprocessSettings
+    ) -> list[tuple[Path, zipfile.ZipInfo]]:
+        ns = {
+            "opf": "http://www.idpf.org/2007/opf",
+            "dc": "http://purl.org/dc/elements/1.1/",
+        }
+        root = await asyncio.to_thread(etree.parse, str(opf_path))
+        contents: list[tuple[Path, zipfile.ZipInfo]] = []
+        for item in root.findall("./opf:manifest/opf:item", namespaces=ns):
+            href = item.get("href")
+            if not href:
+                continue
+            entry = str(opf_path.relative_to(tmp_dir).parent / href)
+            try:
+                mime_type = item.get("media-type")
+                logger.debug(
+                    "Downloading opf manifest entry: {}{}",
+                    entry,
+                    f" ({mime_type})" if mime_type else "",
+                )
+                dest, zinfo = await self._download_epub_entry(tmp_dir, entry)
+                await self._deobfuscate(dest, settings, mime_type=mime_type)
+                if not mime_type or not mime_type.startswith("image/"):
+                    zinfo.compress_type = zipfile.ZIP_DEFLATED
+                contents.append((dest, zinfo))
+            except ClientResponseError:
+                logger.exception("Failed to download opf manifest entry {entry}")
+        return contents
+
+    async def _deobfuscate(
+        self, path: Path, settings: _PreprocessSettings, mime_type: str | None = None
+    ) -> None:
+        if not mime_type:
+            return
+        if mime_type.startswith("image/"):
+            return await self._deobfuscate_image(path, settings, mime_type)
+        return await self._deobfuscate_text(path, settings, mime_type)
+
+    async def _deobfuscate_image(
+        self, path: Path, settings: _PreprocessSettings, mime_type: str
+    ) -> None:
+        if not settings.obfuscate_image:
+            return
+        formats: dict[str, bytes] = {
+            "image/gif": b"GIF8",
+            "image/jpeg": b"\xff\xd8",
+            "image/png": b"\x89PNG",
+        }
+        with open(path, "rb") as f:
+            data = await asyncio.to_thread(f.read)
+        magic = formats.get(mime_type)
+        if magic and data[: len(magic)] == magic:
+            return
+
+        def _xor() -> Iterator[int]:
+            for i, c in enumerate(data):
+                if i < 100:
+                    yield c ^ (settings.obfuscate_image_key or 0)
+                else:
+                    yield c
+
+        with tempfile.NamedTemporaryFile(
+            prefix=path.stem, suffix=path.suffix, dir=path.parent, delete=False
+        ) as temp:
+            temp.write(bytes(_xor()))
+        os.replace(temp.name, path)
+
+    async def _deobfuscate_text(
+        self, path: Path, settings: _PreprocessSettings, mime_type: str
+    ) -> None:
+        if not settings.obfuscate_text or not mime_type == "application/xhtml+xml":
+            return
+        ns = {
+            "xhtml": "http://www.w3.org/1999/xhtml",
+            "epub": "http://www.idpf.org/2007/ops",
+        }
+        root = etree.parse(
+            path, parser=etree.XMLParser(dtd_validation=False, load_dtd=True)
+        )
+        for span in root.findall(".//xhtml:span", namespaces=ns):
+            data_ofs = span.get("data-ofs")
+            if (
+                not data_ofs
+                or not etree.tostring(span, method="text", encoding="utf-8").strip()
+            ):
+                continue
+            seed = int(data_ofs, 36)
+            # data_seq_id = span.get("data-seq-id")
+            # seq_id = int(data_seq_id, 36) if data_seq_id else -1
+            if seed in self._deobfuscators:
+                deobfuscator = self._deobfuscators[seed]
+            else:
+                deobfuscator = _Deobfuscator(seed)
+                self._deobfuscators[seed] = deobfuscator
+
+            def _deobfuscate(element: etree.Element) -> None:
+                if element.text:
+                    element.text = deobfuscator(element.text)
+                if element.tail:
+                    element.tail = deobfuscator(element.tail)
+                for child in element:
+                    _deobfuscate(child)
+
+            _deobfuscate(span)
+
+        with tempfile.NamedTemporaryFile(
+            prefix=path.stem, suffix=path.suffix, dir=path.parent, delete=False
+        ) as temp:
+            root.write(
+                temp.name,
+                pretty_print=True,
+                encoding="UTF-8",
+                doctype=root.docinfo.doctype,
+            )
+        os.replace(temp.name, path)
+
+
+_decoders: dict[int, dict[str, str]] = {}
+
+
+class _Deobfuscator:
+    _HIRAGANA = (
+        "あいうえおかがきぎくぐけげこごさざしじすずせぜそぞただちぢつづてでとどなにぬね"
+        "のはばぱひびぴふぶぷへべぺほぼぽまみむめもやゆよらりるれろわゐゑをんゔ"
+    )
+    _KATAKANA = (
+        "アイウエオカガキギクグケゲコゴサザシジスズセゼソゾタダチヂツヅテデトドナニヌネ"
+        "ノハバパヒビピフブプヘベペホボポマミムメモヤユヨラリルレロワヰヱヲンヴヷヸヹヺ"
+    )
+    _KANJI = (
+        "国人大年生地的日化本会自中一民政分世業者合動法発行方立権間定力成主子出代物体社"
+        "対家活時事用戦制上学後第経場文多産内性教関高理入条要利保界現実水治度済結部進同"
+        "機金軍議心通義問気見外考東題表数市族約争加原域平品新意連開長下全明支和働府以際"
+        "手食労紀不変言調強作質前期情有共海公反資重農量基電安朝使私由所解運図決報住工都"
+        "思交目正商近酸統料道形必小取北南西月命集二流設次求領展素在組受諸持配書信最独境"
+        "改身面特革"
+    )
+
+    def __init__(self, seed: int):
+        if seed not in _decoders:
+            xorshift = _Xorshift(seed)
+            orig = "".join([self._HIRAGANA, self._KATAKANA, self._KANJI])
+            shuffled = "".join(
+                self.shuffle(s, xorshift)
+                for s in (self._HIRAGANA, self._KATAKANA, self._KANJI)
+            )
+            _decoders[seed] = {shuffled[i]: c for i, c in enumerate(orig)}
+        self.decode = _decoders[seed]
+
+    @staticmethod
+    def shuffle(s: str, xorshift: "_Xorshift") -> str:
+        chars = list(s)
+        i = 0
+        while i < len(s) - 2:
+            j = xorshift(i + 1, len(s) - 1)
+            new_j = chars[i]
+            chars[i] = chars[j]
+            chars[j] = new_j
+            i += 1
+        return "".join(chars)
+
+    def __call__(self, s: str) -> str:
+        return "".join(self.decode.get(c, c) for c in s)
+
+
+class _Xorshift:
+    """Xorshift PRNG."""
+
+    def __init__(self, seed: int):
+        self._seed = seed
+        self.prng = self._prng()
+
+    @property
+    def seed(self) -> int:
+        return self._seed
+
+    def __call__(self, seq: int, n: int) -> int:
+        return seq + abs(next(self.prng)) % (n + 1 - seq)
+
+    def _prng(self) -> Iterator[int]:
+        x = 123456789
+        y = 362436069
+        z = 521288629
+        w = self.seed
+
+        while True:
+            t = x ^ (x << 11 & 0xFFFFFFFF)
+            x = y
+            y = z
+            z = w
+            w = w ^ w >> 19 ^ t ^ t >> 8
+            yield js_int(w)
+
+
+def js_int(n: int) -> int:
+    # mimic JS signed 32-bit integer for bitwise operations
+    n &= 0xFFFFFFFF
+    if n >= 0x80000000:
+        n -= 0x100000000
+    return n
