@@ -42,14 +42,8 @@ docs = [
     "sphinx>=7.2.6",
     "sphinx-click>=5.1.0",
 ]
-lint = [
-    "pre-commit>=3.6.0"
-]
 mypy = [
     "mypy>=1.8.0"
-]
-safety = [
-    "safety>=2.3.5"
 ]
 typeguard = [
     "typeguard>=4.1.5",
@@ -110,8 +104,8 @@ pil = [
 
 [dependency-groups]
 dev = [
-    "nox>=2023.4.22",
     "pyupgrade>=3.21.2",
+    "nox>=2026.2.9",
 ]
 coverage = [
     "coverage[toml]>=7.4.0"
@@ -121,9 +115,6 @@ docs = [
     "myst-parser>=2.0.0",
     "sphinx>=7.2.6",
     "sphinx-click>=5.1.0",
-]
-lint = [
-    "pre-commit>=3.6.0"
 ]
 mypy = [
     "mypy>=1.8.0"
@@ -141,12 +132,15 @@ tests = [
     "pytest-mock<4.0.0,>=3.8.2",
     "types-lxml>=2026.2.16",
 ]
-safety = [
-    "safety>=2.3.5"
-]
 typeguard = [
     "typeguard>=4.1.5",
 ]
 xdoctest = [
     "xdoctest[colors]>=1.1.2",
+]
+safety = [
+    "safety>=3.7.0",
+]
+lint = [
+    "pre-commit>=4.5.1",
 ]
