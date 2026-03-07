@@ -607,25 +607,35 @@ class EpubReflowableSession(AbstractAsyncContextManager["EpubReflowableSession"]
         }
         root = await asyncio.to_thread(etree.parse, str(opf_path))
         contents: list[tuple[Path, zipfile.ZipInfo]] = []
-        for item in root.findall("./opf:manifest/opf:item", namespaces=ns):
+        sem = asyncio.Semaphore(min(32, (os.cpu_count() or 1) + 4))
+
+        async def _download_one(item: etree.Element) -> None:
             href = item.get("href")
             if not href:
-                continue
+                return
             entry = str(opf_path.relative_to(tmp_dir).parent / href)
-            try:
-                mime_type = item.get("media-type")
-                logger.debug(
-                    "Downloading opf manifest entry: {}{}",
-                    entry,
-                    f" ({mime_type})" if mime_type else "",
-                )
-                dest, zinfo = await self._download_epub_entry(tmp_dir, entry)
-                await self._deobfuscate(dest, settings, mime_type=mime_type)
-                if not mime_type or not mime_type.startswith("image/"):
-                    zinfo.compress_type = zipfile.ZIP_DEFLATED
-                contents.append((dest, zinfo))
-            except ClientResponseError:
-                logger.exception("Failed to download opf manifest entry {entry}")
+            async with sem:
+                try:
+                    mime_type = item.get("media-type")
+                    logger.debug(
+                        "Downloading opf manifest entry: {}{}",
+                        entry,
+                        f" ({mime_type})" if mime_type else "",
+                    )
+                    dest, zinfo = await self._download_epub_entry(tmp_dir, entry)
+                    await self._deobfuscate(dest, settings, mime_type=mime_type)
+                    if not mime_type or not mime_type.startswith("image/"):
+                        zinfo.compress_type = zipfile.ZIP_DEFLATED
+                    contents.append((dest, zinfo))
+                except ClientResponseError:
+                    logger.exception("Failed to download opf manifest entry {entry}")
+
+        await asyncio.gather(
+            *(
+                _download_one(item)
+                for item in root.findall("./opf:manifest/opf:item", namespaces=ns)
+            )
+        )
         return contents
 
     async def _deobfuscate(
