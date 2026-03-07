@@ -1,4 +1,4 @@
-pdm==2.26.2
+pdm==2.26.6
 pip==25.3
-nox==2025.11.12
-virtualenv==20.35.4
+nox==2026.2.9
+virtualenv==21.1.0
