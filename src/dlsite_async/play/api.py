@@ -182,7 +182,7 @@ class PlayAPI(BaseAPI["PlayAPI"]):
                 purchase, sales_date = _parse_purchase(
                     work, locale=self.locale or "ja_JP"
                 )
-                yield (purchase, sales_date or sales.get(purchase.product_id))
+                yield (purchase, sales.get(purchase.product_id) or sales_date)
 
     async def _get_product_count(self, last: int) -> tuple[int, int, int]:
         url = "https://play.dlsite.com/api/v3/content/count"
