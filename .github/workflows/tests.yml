@@ -174,9 +174,9 @@ jobs:
           pipx install --pip-args=--constraint=${{ github.workspace }}/.github/workflows/constraints.txt pdm
           pdm --version
 
-      - name: Generate requirements.txt
+      - name: Generate production requirements.txt
         run: |
-          pdm export -o requirements.txt --without-hashes
+          pdm export -o requirements.txt --without-hashes --prod -G pil
 
       - name: Run pip-audit
         uses: pypa/gh-action-pip-audit@v1.1.0
