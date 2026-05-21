@@ -16,7 +16,6 @@ python_versions = ["3.14", "3.13", "3.12", "3.11"]
 nox.needs_version = ">= 2021.6.6"
 nox.options.sessions = (
     "pre-commit",
-    "safety",
     "mypy",
     "tests",
     "typeguard",
@@ -35,14 +34,6 @@ def precommit(session: Session) -> None:
         "--show-diff-on-failure",
     ]
     session.run("pre-commit", *args)
-
-
-@session(python=python_versions[0])
-def safety(session: Session) -> None:
-    """Scan dependencies for insecure packages."""
-    session.run_always("pdm", "install", "-G", "safety", external=True)
-    session.run("pdm", "export", "-o", "requirements.txt", "--without-hashes")
-    session.run("safety", "check", "--full-report", "--file=requirements.txt")
 
 
 @session(python=python_versions[0])

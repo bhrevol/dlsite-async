@@ -138,9 +138,6 @@ typeguard = [
 xdoctest = [
     "xdoctest[colors]>=1.1.2",
 ]
-safety = [
-    "safety>=3.7.0",
-]
 lint = [
     "pre-commit>=4.5.1",
 ]

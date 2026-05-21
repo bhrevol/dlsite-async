@@ -41,7 +41,7 @@
       "extends": ["schedule:weekly"]
     },
     {
-      "matchPackagePatterns": ["mypy", "stubs", "safety", "typeguard"],
+      "matchPackagePatterns": ["mypy", "stubs", "typeguard"],
       "groupName": "types",
       "extends": ["schedule:weekly"]
     }
