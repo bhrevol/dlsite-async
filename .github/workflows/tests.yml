@@ -152,3 +152,33 @@ jobs:
         uses: codecov/codecov-action@v6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+
+  pip-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+
+      - name: Upgrade pip
+        run: |
+          pip install --constraint=${{ github.workspace }}/.github/workflows/constraints.txt pip
+          pip --version
+
+      - name: Install PDM
+        run: |
+          pipx install --pip-args=--constraint=${{ github.workspace }}/.github/workflows/constraints.txt pdm
+          pdm --version
+
+      - name: Generate requirements.txt
+        run: |
+          pdm export -o requirements.txt --without-hashes
+
+      - name: Run pip-audit
+        uses: pypa/gh-action-pip-audit@v1.1.0
+        with:
+          inputs: requirements.txt
