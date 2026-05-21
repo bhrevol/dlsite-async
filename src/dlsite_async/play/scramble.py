@@ -115,5 +115,5 @@ def descramble(path: str | Path, playfile: PlayFile, **save_kwargs: Any) -> None
     # (scrambled image is padded to align to 128 pixel tile boundary)
     new_im = new_im.crop((0, 0, width, height))
     if path.suffix.lower() in (".jpg", ".jpeg") and "quality" not in save_kwargs:
-        save_kwargs["quality"] = "keep"
+        save_kwargs["quality"] = "keep" if new_im.format == "JPEG" else 95
     new_im.save(path, **save_kwargs)
