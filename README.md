@@ -48,9 +48,10 @@ Async DLsite Play API
     HLS video segments is not supported.
 - Supports de-scrambling downloaded images (from book type works)
   - Image de-scrambling requires installation with `dlsite-async[pil]`
-- Supports downloading Comic Viewer ebook formats (`ebook_fixed`, `ebook_webtoon`,
-  `voicecomic_v2` PlayFile types)
-  - For `voicecomic_v2` works, audio for each page is downloaded alongside page images.
+- Supports downloading Comic Viewer ebook formats (`ebook_fixed`, `ebook_voicecomic`,
+  `ebook_webtoon`, `voicecomic_v2` PlayFile types)
+  - For `ebook_voicecomic` and `voicecomic_v2` works, audio for each page is downloaded
+    alongside page images.
 
 ## Requirements
 
@@ -317,7 +318,7 @@ Instead, you need to first load the `page` array for the PDF entry and then crea
 >>> asyncio.run(f())
 ```
 
-### Ebook viewer (`ebook_fixed`, `ebook_webtoon`, `voicecomic_v2`)
+### Ebook viewer (`ebook_fixed`, `ebook_voicecomic`, `ebook_webtoon`, `voicecomic_v2`)
 
 Download the first page from a Comic Viewer or Webtoon ebook work to the current working
 directory (as a web-optimized WebP image):

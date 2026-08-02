@@ -28,7 +28,7 @@ class EbookSession(AbstractAsyncContextManager["EbookSession"]):
     Args:
         play_api: Parent PlayAPI session.
         ziptree: DLsite Play ZipTree for the ebook work. Must contain an ``ebook_fixed``,
-            ``ebook_webtoon`` or ``voicecomic_v2`` playfile entry.
+            ``ebook_voicecomic``, ``ebook_webtoon`` or ``voicecomic_v2`` playfile entry.
         playfile: PlayFile entry for the ebook to open in ``ziptree``.
         workno: DLsite product ID for the ebook work (defaults to `ziptree.workno`).
     """

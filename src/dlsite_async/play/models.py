@@ -110,7 +110,12 @@ class PlayFile(_PlayModel):
 
     @property
     def is_ebook(self) -> bool:
-        return self.type in {"ebook_fixed", "ebook_webtoon", "voicecomic_v2"}
+        return self.type in {
+            "ebook_fixed",
+            "ebook_voicecomic",
+            "ebook_webtoon",
+            "voicecomic_v2",
+        }
 
     @property
     @deprecated("PlayFile.is_epub is deprecated, use PlayFile.is_epub_fixed instead.")
