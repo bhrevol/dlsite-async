@@ -184,7 +184,7 @@ class DlsiteAPI(BaseAPI["DlsiteAPI"]):
         ]
         html: str | None = None
         for url in urls:
-            async with self.get(url) as response:
+            async with self.get(url, raise_for_status=False) as response:
                 if response.status == 200:
                     html = await response.text()
                     break
