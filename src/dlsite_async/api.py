@@ -6,7 +6,7 @@ from datetime import datetime
 from netrc import netrc
 from typing import Any, TypeVar
 
-from aiohttp import ClientSession, ClientTimeout
+from aiohttp import ClientError, ClientSession, ClientTimeout
 from aiohttp.client import _RequestContextManager
 
 from ._scraper import parse_circle_html, parse_login_token, parse_work_html
@@ -153,8 +153,11 @@ class DlsiteAPI(BaseAPI["DlsiteAPI"]):
         """
         url = "https://www.dlsite.com/maniax/product/info/ajax"
         params = {"product_id": product_id}
-        async with self.get(url, params=params) as response:
-            data = await response.json()
+        try:
+            async with self.get(url, params=params) as response:
+                data = await response.json()
+        except ClientError as e:
+            raise DlsiteError(f"Failed to get product info for {product_id}") from e
         if not data or product_id not in data:
             raise DlsiteError(f"Failed to get product info for {product_id}")
         info = data[product_id]
@@ -202,7 +205,10 @@ class DlsiteAPI(BaseAPI["DlsiteAPI"]):
         Raises:
             DlsiteError: Failed to fetch circle information.
         """
-        html = await self._fetch_circle_html(maker_id)
+        try:
+            html = await self._fetch_circle_html(maker_id)
+        except ClientError as e:
+            raise DlsiteError(f"Failed to get circle {maker_id}") from e
         if not html:
             raise DlsiteError(f"Failed to get circle {maker_id}")
         info = parse_circle_html(html)
