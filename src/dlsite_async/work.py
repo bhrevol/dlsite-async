@@ -55,6 +55,56 @@ class WorkType(str, Enum):
     WEBTOON = "WBT"
 
 
+class WorkOption(str, Enum):
+    """Work options."""
+
+    AI_GENERATED = "AIG"
+    AI_PARTIAL = "AIP"
+    APK_FILE = "WAP"
+    BROWSER_COMPATIBLE = "DLP"
+    BULGARIAN = "BUL"
+    CHINESE_SIMPLIFIED = "CHI_HANS"
+    CHINESE_TRADITIONAL = "CHI_HANT"
+    CZECH = "CZE"
+    DANISH = "DAN"
+    DUTCH = "DUT"
+    ENGLISH = "ENG"
+    ESTONIAN = "EST"
+    EVENT = "EVT"
+    FINNISH = "FIN"
+    FRENCH = "FRE"
+    GERMAN = "GER"
+    GREEK = "GRE"
+    GROTESQUE = "GRO"
+    HOMOSEXUALITY = "MEN"
+    HUNGARIAN = "HUN"
+    ICELANDIC = "ICE"
+    INDONESIAN = "IND"
+    ITALIAN = "ITA"
+    JAPANESE = "JPN"
+    KOREAN = "KO_KR"
+    LATVIAN = "LAV"
+    MUSIC = "MS2"
+    PDF_FILE = "WPD"
+    POLISH = "POL"
+    PORTUGUESE = "POR"
+    RECOMMENDED_TRANSLATION = "VET"
+    REVIEWS = "REV"
+    ROMANIAN = "RUM"
+    RUSSIAN = "RUS"
+    SAVE_BACKUP = "SBK"
+    SLOVAK = "SLO"
+    SLOVENIAN = "SLV"
+    SPANISH = "SPA"
+    SWEDISH = "SWE"
+    THAI = "THA"
+    TRIAL_VERSION = "TRI"
+    UKRANIAN = "UKR"
+    VIDEO = "MV2"
+    VIETNAMESE = "VIE"
+    VOICE = "SND"
+
+
 @dataclass
 class Work:
     """DLsite work (product) class."""
@@ -91,6 +141,7 @@ class Work:
     work_name_masked: str | None = None
     title_name: str | None = None
     title_name_masked: str | None = None
+    options: list[WorkOption] | None = None
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> "Work":

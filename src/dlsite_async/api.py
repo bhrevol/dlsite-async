@@ -12,7 +12,7 @@ from aiohttp.client import _RequestContextManager
 from ._scraper import parse_circle_html, parse_login_token, parse_work_html
 from .circle import Circle
 from .exceptions import AuthenticationError, DlsiteError
-from .work import AgeCategory, BookType, Work, WorkType
+from .work import AgeCategory, BookType, Work, WorkOption, WorkType
 
 
 _T = TypeVar("_T")
@@ -168,6 +168,15 @@ class DlsiteAPI(BaseAPI["DlsiteAPI"]):
             info["book_type"] = BookType(info["book_type"]["value"])
         if info.get("regist_date"):
             info["regist_date"] = _datetime_from_timestamp(info["regist_date"])
+        if info.get("options"):
+            options = []
+            for option in info.get("options", "").split("#"):
+                try:
+                    options.append(WorkOption(option))
+                except ValueError:
+                    pass
+            info["options"] = options
+
         return Work.from_dict(info)
 
     async def _fill_work_details(self, work: Work) -> Work:
