@@ -14,7 +14,7 @@ from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass
 from email.utils import parsedate_to_datetime
 from enum import IntEnum
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Self
 from typing_extensions import deprecated
 
