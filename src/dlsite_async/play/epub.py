@@ -582,14 +582,14 @@ class EpubReflowableSession(AbstractAsyncContextManager["EpubReflowableSession"]
                 os.utime(temp.name, (time.time(), dt.timestamp()))
         os.replace(temp.name, dest)
         zipinfo = zipfile.ZipInfo.from_file(
-            dest, arcname=str(PurePosixPath(dest.relative_to(tmp_dir)))
+            dest, arcname=dest.relative_to(tmp_dir).as_posix()
         )
         return dest, zipinfo
 
     @staticmethod
     async def _get_rootfile(container_path: Path) -> str:
         ns = {"c": "urn:oasis:names:tc:opendocument:xmlns:container"}
-        root = await asyncio.to_thread(etree.parse, str(container_path))
+        root = await asyncio.to_thread(etree.parse, container_path.as_posix())
         rootfile = root.find(".//c:rootfile", namespaces=ns)
         if rootfile is None:
             raise ValueError("epub container does not contain OPF rootfile")
@@ -605,7 +605,7 @@ class EpubReflowableSession(AbstractAsyncContextManager["EpubReflowableSession"]
             "opf": "http://www.idpf.org/2007/opf",
             "dc": "http://purl.org/dc/elements/1.1/",
         }
-        root = await asyncio.to_thread(etree.parse, str(opf_path))
+        root = await asyncio.to_thread(etree.parse, opf_path.as_posix())
         contents: list[tuple[Path, zipfile.ZipInfo]] = []
         sem = asyncio.Semaphore(min(32, (os.cpu_count() or 1) + 4))
 
@@ -613,7 +613,7 @@ class EpubReflowableSession(AbstractAsyncContextManager["EpubReflowableSession"]
             href = item.get("href")
             if not href:
                 return
-            entry = str(opf_path.relative_to(tmp_dir).parent / href)
+            entry = (opf_path.relative_to(tmp_dir).parent / href).as_posix()
             async with sem:
                 try:
                     mime_type = item.get("media-type")
