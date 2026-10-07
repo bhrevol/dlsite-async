@@ -227,10 +227,10 @@ def _parse_purchase(
         d["authors"] = [author.strip() for author in d["author_name"].split("/")]
     d["maker_id"] = d["maker"]["id"]
     if d["maker_id"].startswith("R"):
-        d["circle"] = _localized_name(d["maker"]["name"])
+        d["circle"] = _localized_name(d["maker"]["name"], locale)
     else:
-        d["brand"] = _localized_name(d["maker"]["name"])
-    d["work_name"] = _localized_name(d["name"])
+        d["brand"] = _localized_name(d["maker"]["name"], locale)
+    d["work_name"] = _localized_name(d["name"], locale)
     if d.get("regist_date"):
         d["regist_date"] = fromisoformat(d["regist_date"])
     if d.get("sales_date"):
