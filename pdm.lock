@@ -2198,16 +2198,16 @@ files = [
 
 [[package]]
 name = "pyupgrade"
-version = "3.21.2"
-requires_python = ">=3.10"
+version = "3.22.0"
+requires_python = ">=3.11"
 summary = "A tool to automatically upgrade syntax for newer versions."
 groups = ["dev"]
 dependencies = [
     "tokenize-rt>=6.1.0",
 ]
 files = [
-    {file = "pyupgrade-3.21.2-py2.py3-none-any.whl", hash = "sha256:2ac7b95cbd176475041e4dfe8ef81298bd4654a244f957167bd68af37d52be9f"},
-    {file = "pyupgrade-3.21.2.tar.gz", hash = "sha256:1a361bea39deda78d1460f65d9dd548d3a36ff8171d2482298539b9dc11c9c06"},
+    {file = "pyupgrade-3.22.0-py2.py3-none-any.whl", hash = "sha256:98c87952345cca4dec6589436b9c1e4b2e8c09617f41aa1582fb448728201024"},
+    {file = "pyupgrade-3.22.0.tar.gz", hash = "sha256:6889a7be7f0d0ea3119789bc50086a008a91ed6c46005a030f8928b501550425"},
 ]
 
 [[package]]
