@@ -18,9 +18,9 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Self
 from typing_extensions import deprecated
 
-from aiohttp import ClientResponseError
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from cryptography.hazmat.primitives import hashes, serialization
+from curl_cffi import CurlError
 from lxml import etree
 
 from ..exceptions import DlsiteError
@@ -144,25 +144,21 @@ class EpubFixedSession(AbstractAsyncContextManager["EpubFixedSession"]):
                 "param": self._token.param,
                 "time": self._wake_up,
             }
-            async with self._play.get(self._token.cgi, params=params) as response:
-                response.raise_for_status()
+            await self._play.get(self._token.cgi, params=params)
 
             params["mode"] = _Mode.DL_JPEG.value
             params["file"] = "extend_info.json"
             params["reqtype"] = _RequestType.FILE.value
-            async with self._play.get(
-                self._token.cgi, params=params, raise_for_status=False
-            ) as response:
-                # TODO: handle extended info if a work that requires it is found.
-                # This request 404's for all works used in testing but we do it to
-                # match the viewer auth->face xml request flow
-                pass
+            await self._play.get(self._token.cgi, params=params, raise_for_status=False)
+            # TODO: handle extended info if a work that requires it is found.
+            # This request 404's for all works used in testing but we do it to
+            # match the viewer auth->face xml request flow
 
             params["mode"] = _Mode.DL_FACE_XML.value
             params["file"] = "face.xml"
             params["reqtype"] = _RequestType.FILE.value
-            async with self._play.get(self._token.cgi, params=params) as response:
-                self._load_face_xml(await response.text())
+            response = await self._play.get(self._token.cgi, params=params)
+            self._load_face_xml(response.text)
 
     def _load_face_xml(self, content: str) -> None:
         root = etree.fromstring(content)
@@ -197,9 +193,9 @@ class EpubFixedSession(AbstractAsyncContextManager["EpubFixedSession"]):
             "hashname": self.playfile.hashname or "",
             "layout": "fixed",
         }
-        async with self._play.get(url, params=params) as response:
-            data = await response.json()
-            return CSRToken.from_json(data["values"])
+        response = await self._play.get(url, params=params)
+        data = response.json()
+        return CSRToken.from_json(data["values"])
 
     async def download_page(
         self,
@@ -253,21 +249,24 @@ class EpubFixedSession(AbstractAsyncContextManager["EpubFixedSession"]):
                 "param": self._token.param,
                 "time": self._wake_up,
             }
-            async with self._play.get(
-                self._token.cgi, params=params, timeout=self._play._DL_TIMEOUT
-            ) as response:
-                with tempfile.NamedTemporaryFile(
-                    prefix=dest.stem, suffix=".jpg", dir=dest.parent, delete=False
-                ) as temp:
-                    try:
-                        async for chunk in response.content.iter_chunked(
-                            self._play._DL_CHUNK_SIZE
-                        ):
-                            temp.write(chunk)
-                    except Exception:
-                        temp.close()
-                        os.remove(temp.name)
-                        raise
+            response = await self._play.get(
+                self._token.cgi,
+                params=params,
+                stream=True,
+                timeout=self._play._DL_TIMEOUT,
+            )
+            with tempfile.NamedTemporaryFile(
+                prefix=dest.stem, suffix=".jpg", dir=dest.parent, delete=False
+            ) as temp:
+                try:
+                    async for chunk in response.aiter_content(  # type: ignore[no-untyped-call]
+                        self._play._DL_CHUNK_SIZE
+                    ):
+                        temp.write(chunk)
+                except Exception:
+                    temp.close()
+                    os.remove(temp.name)
+                    raise
             if descramble and part.scramble and self._scramble_size is not None:
                 await asyncio.to_thread(
                     self._descramble,
@@ -294,8 +293,8 @@ class EpubFixedSession(AbstractAsyncContextManager["EpubFixedSession"]):
             "param": self._token.param,
             "time": self._wake_up,
         }
-        async with self._play.get(self._token.cgi, params=params) as response:
-            root = etree.fromstring(await response.text())
+        response = await self._play.get(self._token.cgi, params=params)
+        root = etree.fromstring(response.text)
         page_no = root.findtext("PageNo")
         if page_no is None:
             raise DlsiteError("Unexpected CSR viewer page data")
@@ -447,21 +446,21 @@ class EpubReflowableSession(AbstractAsyncContextManager["EpubReflowableSession"]
             "play_type": "epub_reflowable",
         }
         url = "https://play.dlsite.com/api/v3/csr/reflowable/token"
-        async with self._play.post(url, json=payload) as response:
-            data = await response.json()
-            values = data["values"]
+        response = await self._play.post(url, json=payload)
+        data = response.json()
+        values = data["values"]
 
-            ciphertext = b64decode(values["key"])
-            plaintext = private_key.decrypt(
-                ciphertext,
-                padding.OAEP(
-                    mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                    algorithm=hashes.SHA256(),
-                    label=None,
-                ),
-            )
-            values["key"] = bytes.fromhex(plaintext.decode())
-            return CSRReflowableToken.from_json(values)
+        ciphertext = b64decode(values["key"])
+        plaintext = private_key.decrypt(
+            ciphertext,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None,
+            ),
+        )
+        values["key"] = bytes.fromhex(plaintext.decode())
+        return CSRReflowableToken.from_json(values)
 
     def _decrypt(self, data: bytes, offset: int = 0) -> bytes:
         if self._token is None:
@@ -560,26 +559,27 @@ class EpubReflowableSession(AbstractAsyncContextManager["EpubReflowableSession"]
         if not dest.parent.exists():
             dest.parent.mkdir(parents=True)
         url = f"{self._token.base_url}/{epub_entry}"
-        async with self._play.get(
+        response = await self._play.get(
             url,
             headers={
                 "Authorization": f"Bearer {urllib.parse.quote_plus(self._token.vt)}"
             },
+            stream=True,
             timeout=self._play._DL_TIMEOUT,
-        ) as response:
-            with tempfile.NamedTemporaryFile(
-                prefix=dest.stem, suffix=dest.suffix, dir=dest.parent, delete=False
-            ) as temp:
-                offset = 0
-                async for chunk in response.content.iter_chunked(
-                    self._play._DL_CHUNK_SIZE
-                ):
-                    temp.write(self._decrypt(chunk, offset=offset))
-                    offset += len(chunk)
-            last_modified = response.headers.get("Last-Modified")
-            if last_modified:
-                dt = parsedate_to_datetime(last_modified)
-                os.utime(temp.name, (time.time(), dt.timestamp()))
+        )
+        with tempfile.NamedTemporaryFile(
+            prefix=dest.stem, suffix=dest.suffix, dir=dest.parent, delete=False
+        ) as temp:
+            offset = 0
+            async for chunk in response.aiter_content(  # type: ignore[no-untyped-call]
+                self._play._DL_CHUNK_SIZE
+            ):
+                temp.write(self._decrypt(chunk, offset=offset))
+                offset += len(chunk)
+        last_modified = response.headers.get("Last-Modified")
+        if last_modified:
+            dt = parsedate_to_datetime(last_modified)
+            os.utime(temp.name, (time.time(), dt.timestamp()))
         os.replace(temp.name, dest)
         zipinfo = zipfile.ZipInfo.from_file(
             dest, arcname=dest.relative_to(tmp_dir).as_posix()
@@ -627,7 +627,7 @@ class EpubReflowableSession(AbstractAsyncContextManager["EpubReflowableSession"]
                     if not mime_type or not mime_type.startswith("image/"):
                         zinfo.compress_type = zipfile.ZIP_DEFLATED
                     contents.append((dest, zinfo))
-                except ClientResponseError:
+                except CurlError:
                     logger.exception("Failed to download opf manifest entry {entry}")
 
         await asyncio.gather(
