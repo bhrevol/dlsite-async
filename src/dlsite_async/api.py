@@ -6,8 +6,7 @@ from datetime import datetime
 from netrc import netrc
 from typing import Any, TypeVar
 
-from aiohttp import ClientError, ClientSession, ClientTimeout
-from aiohttp.client import _RequestContextManager
+from curl_cffi import AsyncSession, CurlError, Response
 
 from ._scraper import parse_circle_html, parse_login_token, parse_work_html
 from .circle import Circle
@@ -30,17 +29,13 @@ class BaseAPI(AbstractAsyncContextManager["_T"]):
     """
 
     _DL_CHUNK_SIZE = 1024 * 1024
-    _DL_TIMEOUT = ClientTimeout(
-        total=None,
-        connect=300,
-        sock_connect=None,
-        sock_read=None,
-    )
+    _DL_TIMEOUT = None
 
     def __init__(self, **kwargs: Any):
         self._exit_stack = AsyncExitStack()
         kwargs["raise_for_status"] = True
-        self.session = ClientSession(**kwargs)
+        kwargs["impersonate"] = "chrome"
+        self.session: AsyncSession = AsyncSession(**kwargs)
         self._exit_stack.push_async_exit(self.session)
         self._authed = False
 
@@ -52,13 +47,13 @@ class BaseAPI(AbstractAsyncContextManager["_T"]):
         async with self._exit_stack:
             pass
 
-    def get(self, *args: Any, **kwargs: Any) -> _RequestContextManager:
+    async def get(self, *args: Any, **kwargs: Any) -> Response:
         """Perform get request."""
-        return self.session.get(*args, **kwargs)
+        return await self.session.get(*args, **kwargs)
 
-    def post(self, *args: Any, **kwargs: Any) -> _RequestContextManager:
+    async def post(self, *args: Any, **kwargs: Any) -> Response:
         """Perform post request."""
-        return self.session.post(*args, **kwargs)
+        return await self.session.post(*args, **kwargs)
 
     async def login(
         self,
@@ -90,17 +85,17 @@ class BaseAPI(AbstractAsyncContextManager["_T"]):
         if not login_id or not password:
             raise AuthenticationError("DLsite login_id and password are required.")
         url = "https://login.dlsite.com/login"
-        async with self.get(url, params={"user": "self"}) as response:
-            content = await response.text()
-            token = parse_login_token(content)
+        response = await self.get(url, params={"user": "self"})
+        content = response.text
+        token = parse_login_token(content)
         payload = {
             "_token": token,
             "login_id": login_id,
             "password": password,
         }
-        async with self.post(url, data=payload) as response:
-            if "ログイン中です" not in await response.text():
-                raise AuthenticationError("DLsite login failed.")
+        response = await self.post(url, data=payload)
+        if "ログイン中です" not in response.text:
+            raise AuthenticationError("DLsite login failed.")
         self._authed = True
 
 
@@ -119,13 +114,13 @@ class DlsiteAPI(BaseAPI["DlsiteAPI"]):
     def _common_params(self) -> dict[str, str]:
         return {"locale": self.locale} if self.locale else {}
 
-    def get(self, *args: Any, **kwargs: Any) -> _RequestContextManager:
+    async def get(self, *args: Any, **kwargs: Any) -> Response:
         """Perform get request."""
         if "params" in kwargs:
             kwargs["params"].update(self._common_params)
         else:
             kwargs["params"] = self._common_params
-        return super().get(*args, **kwargs)
+        return await super().get(*args, **kwargs)
 
     async def get_work(self, product_id: str) -> Work:
         """Return the specified work.
@@ -154,9 +149,9 @@ class DlsiteAPI(BaseAPI["DlsiteAPI"]):
         url = "https://www.dlsite.com/maniax/product/info/ajax"
         params = {"product_id": product_id}
         try:
-            async with self.get(url, params=params) as response:
-                data = await response.json()
-        except ClientError as e:
+            response = await self.get(url, params=params)
+            data = response.json()
+        except CurlError as e:
             raise DlsiteError(f"Failed to get product info for {product_id}") from e
         if not data or product_id not in data:
             raise DlsiteError(f"Failed to get product info for {product_id}")
@@ -196,10 +191,10 @@ class DlsiteAPI(BaseAPI["DlsiteAPI"]):
         ]
         html: str | None = None
         for url in urls:
-            async with self.get(url, raise_for_status=False) as response:
-                if response.status == 200:
-                    html = await response.text()
-                    break
+            response = await self.get(url, raise_for_status=False)
+            if response.status_code == 200:
+                html = response.text
+                break
         return html
 
     async def get_circle(self, maker_id: str) -> Circle:
@@ -216,7 +211,7 @@ class DlsiteAPI(BaseAPI["DlsiteAPI"]):
         """
         try:
             html = await self._fetch_circle_html(maker_id)
-        except ClientError as e:
+        except CurlError as e:
             raise DlsiteError(f"Failed to get circle {maker_id}") from e
         if not html:
             raise DlsiteError(f"Failed to get circle {maker_id}")
@@ -228,7 +223,7 @@ class DlsiteAPI(BaseAPI["DlsiteAPI"]):
         url = (
             f"https://www.dlsite.com/maniax/circle/profile/=/maker_id/{maker_id}.html/"
         )
-        async with self.get(url) as response:
-            if response.status == 200:
-                return await response.text()
+        response = await self.get(url)
+        if response.status_code == 200:
+            return response.text
         return None
