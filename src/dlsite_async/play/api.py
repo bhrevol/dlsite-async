@@ -34,13 +34,9 @@ class PlayAPI(BaseAPI["PlayAPI"]):
         """Login to DLsite Play."""
         await super().login(*args, **kwargs)
         url = "https://play.dlsite.com/login/"
-        async with self.get(url) as response:
-            await response.read()
+        await self.get(url)
         url = "https://play.dlsite.com/api/authorize"
-        async with self.get(
-            url, headers={"Referer": "https://play.dlsite.com/"}
-        ) as response:
-            await response.read()
+        await self.get(url, headers={"Referer": "https://play.dlsite.com/"})
 
     async def download_token(self, workno: str) -> DownloadToken:
         """Return a download token for the specified workno.
@@ -52,8 +48,8 @@ class PlayAPI(BaseAPI["PlayAPI"]):
             A new download token.
         """
         url = "https://play.dl.dlsite.com/api/v3/download/sign/cookie"
-        async with self.get(url, params={"workno": workno}) as response:
-            return DownloadToken.from_json(await response.json())
+        response = await self.get(url, params={"workno": workno})
+        return DownloadToken.from_json(response.json())
 
     async def ziptree(self, token: DownloadToken) -> ZipTree:
         """Return ziptree for the specified download.
@@ -65,8 +61,8 @@ class PlayAPI(BaseAPI["PlayAPI"]):
             A new zip tree.
         """
         url = f"{token.url}ziptree.json"
-        async with self.get(url) as response:
-            return ZipTree.from_json(await response.json())
+        response = await self.get(url)
+        return ZipTree.from_json(response.json())
 
     async def download_playfile(
         self,
@@ -108,19 +104,17 @@ class PlayAPI(BaseAPI["PlayAPI"]):
             dest.parent.mkdir(parents=True)
         if not force and dest.exists():
             raise FileExistsError(str(dest))
-        async with self.get(url, timeout=self._DL_TIMEOUT) as response:
-            try:
-                with tempfile.NamedTemporaryFile(
-                    prefix=dest.name, dir=dest.parent, delete=False
-                ) as temp:
-                    async for chunk in response.content.iter_chunked(
-                        self._DL_CHUNK_SIZE
-                    ):
-                        temp.write(chunk)
-            except Exception:
-                temp.close()
-                os.remove(temp)
-                raise
+        response = await self.get(url, stream=True, timeout=self._DL_TIMEOUT)
+        try:
+            with tempfile.NamedTemporaryFile(
+                prefix=dest.name, dir=dest.parent, delete=False
+            ) as temp:
+                async for chunk in response.aiter_content(self._DL_CHUNK_SIZE):
+                    temp.write(chunk)
+        except Exception:
+            temp.close()
+            os.remove(temp)
+            raise
         os.replace(temp.name, dest)
         if (
             playfile.type == "image"
@@ -166,18 +160,18 @@ class PlayAPI(BaseAPI["PlayAPI"]):
 
         async def _get_one(page: int) -> Any:
             start = page * 100
-            async with self.post(
+            response = await self.post(
                 url,
                 json=[workno for workno in worknos[start : start + 100]],
-            ) as response:
-                return await response.json()
+            )
+            return response.json()
 
         # api v3 webapp ignores pagination/concurrency and just requests 100 works at a time
         # api v3 server also does not like high concurrent requests so just do
         # it sequentially
         for works in _batched(worknos, 100):
-            async with self.post(url, json=works) as response:
-                data = await response.json()
+            response = await self.post(url, json=works)
+            data = response.json()
             for work in data.get("works", []):
                 purchase, sales_date = _parse_purchase(
                     work, locale=self.locale or "ja_JP"
@@ -186,8 +180,8 @@ class PlayAPI(BaseAPI["PlayAPI"]):
 
     async def _get_product_count(self, last: int) -> tuple[int, int, int]:
         url = "https://play.dlsite.com/api/v3/content/count"
-        async with self.get(url, params={"last": last}) as response:
-            data = await response.json()
+        response = await self.get(url, params={"last": last})
+        data = response.json()
         return (
             data.get("user", 0),
             data.get("page_limit", 50),
@@ -198,8 +192,8 @@ class PlayAPI(BaseAPI["PlayAPI"]):
         self, last: int
     ) -> tuple[list[str], dict[str, datetime]]:
         url = "https://play.dlsite.com/api/v3/content/sales"
-        async with self.get(url, params={"last": last}) as response:
-            data = await response.json()
+        response = await self.get(url, params={"last": last})
+        data = response.json()
         works = []
         sales = {}
         for item in data:

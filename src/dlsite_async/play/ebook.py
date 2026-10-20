@@ -108,28 +108,28 @@ class EbookSession(AbstractAsyncContextManager["EbookSession"]):
             ).decode(),
         }
         url = f"https://play.dlsite.com/api/v3/viewer/token/{self.workno}"
-        async with self._play.post(url, json=payload) as response:
-            data = await response.json()
-            ciphertext = b64decode(data["key"])
-            plaintext = private_key.decrypt(
-                ciphertext,
-                padding.OAEP(
-                    mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                    algorithm=hashes.SHA256(),
-                    label=None,
-                ),
-            )
-            data["key"] = bytes.fromhex(plaintext.decode())
-            data["v"] = self.ziptree.revision or ""
-            return ViewerToken.from_json(data)
+        response = await self._play.post(url, json=payload)
+        data = response.json()
+        ciphertext = b64decode(data["key"])
+        plaintext = private_key.decrypt(
+            ciphertext,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None,
+            ),
+        )
+        data["key"] = bytes.fromhex(plaintext.decode())
+        data["v"] = self.ziptree.revision or ""
+        return ViewerToken.from_json(data)
 
     async def _download_meta(self) -> dict[str, Any]:
         """Return viewer metadata for this ebook."""
         if self._token is None:
             raise DlsiteError("Ebook session has not been loaded")
         url = f"{self._token.prefix}/{self.playfile.hashname}/viewer-meta.json"
-        async with self._play.get(url, params=self._token.params) as response:
-            return cast(dict[str, Any], await response.json())
+        response = await self._play.get(url, params=self._token.params)
+        return cast(dict[str, Any], response.json())
 
     async def download_page(
         self,
@@ -195,31 +195,32 @@ class EbookSession(AbstractAsyncContextManager["EbookSession"]):
                 dest.parent.mkdir(parents=True)
             if not force and dest.exists():
                 raise FileExistsError(str(dest))
-            async with self._play.get(
-                url, params=self._token.params, timeout=self._play._DL_TIMEOUT
-            ) as response:
-                with tempfile.NamedTemporaryFile(
-                    prefix=dest.stem, suffix=".webp", dir=dest.parent, delete=False
-                ) as temp:
-                    try:
-                        offset = 0
-                        async for chunk in response.content.iter_chunked(
-                            self._play._DL_CHUNK_SIZE
-                        ):
-                            temp.write(
-                                bytes(
-                                    chunk[i]
-                                    ^ self._token.key[
-                                        (offset + i) % len(self._token.key)
-                                    ]
-                                    for i in range(len(chunk))
-                                )
+            response = await self._play.get(
+                url,
+                params=self._token.params,
+                stream=True,
+                timeout=self._play._DL_TIMEOUT,
+            )
+            with tempfile.NamedTemporaryFile(
+                prefix=dest.stem, suffix=".webp", dir=dest.parent, delete=False
+            ) as temp:
+                try:
+                    offset = 0
+                    async for chunk in response.aiter_content(
+                        self._play._DL_CHUNK_SIZE
+                    ):
+                        temp.write(
+                            bytes(
+                                chunk[i]
+                                ^ self._token.key[(offset + i) % len(self._token.key)]
+                                for i in range(len(chunk))
                             )
-                            offset += len(chunk)
-                    except Exception:
-                        temp.close()
-                        os.remove(temp.name)
-                        raise
+                        )
+                        offset += len(chunk)
+                except Exception:
+                    temp.close()
+                    os.remove(temp.name)
+                    raise
             if convert:
                 _convert(temp.name, dest, **save_kwargs)
                 os.remove(temp.name)
@@ -234,21 +235,24 @@ class EbookSession(AbstractAsyncContextManager["EbookSession"]):
                 dest = dest_dir / Path(audio_src).name
                 if not force and dest.exists():
                     raise FileExistsError(str(dest))
-                async with self._play.get(
-                    url, params=self._token.params, timeout=self._play._DL_TIMEOUT
-                ) as response:
-                    with tempfile.NamedTemporaryFile(
-                        prefix=dest.name, dir=dest.parent, delete=False
-                    ) as temp:
-                        try:
-                            async for chunk in response.content.iter_chunked(
-                                self._play._DL_CHUNK_SIZE
-                            ):
-                                temp.write(chunk)
-                        except Exception:
-                            temp.close()
-                            os.remove(temp)
-                            raise
+                response = await self._play.get(
+                    url,
+                    params=self._token.params,
+                    stream=True,
+                    timeout=self._play._DL_TIMEOUT,
+                )
+                with tempfile.NamedTemporaryFile(
+                    prefix=dest.name, dir=dest.parent, delete=False
+                ) as temp:
+                    try:
+                        async for chunk in response.aiter_content(
+                            self._play._DL_CHUNK_SIZE
+                        ):
+                            temp.write(chunk)
+                    except Exception:
+                        temp.close()
+                        os.remove(temp)
+                        raise
                 os.replace(temp.name, dest)
                 results.append(dest)
 
