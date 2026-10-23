@@ -106,6 +106,15 @@ This will allow a chance to talk it over with the owners and validate your appro
 
 [pull request]: https://github.com/bhrevol/dlsite-async/pulls
 
+## Strict No LLM / No AI Policy
+
+- No LLMs for issues.
+- No LLMs for patches / pull requests.
+- No LLMs for comments issues / PRs / discussions, including translation.
+
+English is encouraged, but not required.
+You are welcome to post in your native language and rely on others to have their own translation tools of choice to interpret your words.
+
 <!-- github-only -->
 
 [code of conduct]: CODE_OF_CONDUCT.md
