@@ -127,17 +127,17 @@ class _TextRowParser(_RowParser):
 _parsers = [
     _DateRowParser("announce_date", ("予告開始日", "Published date")),
     _DateRowParser(
-        "modified_date",
+        "update_date",
         ("最終更新日", "更新情報", "Last updated", "Update information"),
     ),
     _IntRowParser("page_count", ("ページ数", "Page count")),
-    _MakerRowParser("brand", ("ブランド名", "Brand")),
-    _MakerRowParser("circle", ("サークル名", "Circle")),
-    _MakerRowParser("publisher", ("出版社名", "Publisher")),
-    _MakerRowParser("label", ("レーベル", "Label")),
+    _MakerRowParser("maker_name", ("ブランド名", "Brand")),
+    _MakerRowParser("maker_name", ("サークル名", "Circle")),
+    _MakerRowParser("maker_name", ("出版社名", "Publisher")),
+    _MakerRowParser("label_name", ("レーベル", "Label")),
     _ListRowParser("author", ("作者", "著者", "Author")),
     _ListRowParser("event", ("イベント", "Event")),
-    _ListRowParser("file_format", ("ファイル形式", "File format")),
+    _ListRowParser("file_format_legacy", ("ファイル形式", "File format")),
     _ListRowParser("illustration", ("イラスト", "Illustration")),
     _ListRowParser("genre", ("ジャンル", "Genre")),
     _ListRowParser("music", ("音楽", "Music")),
@@ -223,7 +223,7 @@ def _parse_work_description(meta: html.HtmlElement) -> Any:
         content = _DESC_EN.sub("", content).strip()
         content = _DESC_JP.sub("", content).strip()
         content = _DESC_COMIPO_JP.sub("", content).strip()
-    return {"description": content} if content else {}
+    return {"intro_masked": content} if content else {}
 
 
 def parse_circle_html(content: str) -> dict[str, Any]:

@@ -2,7 +2,6 @@
 
 from contextlib import AbstractAsyncContextManager, AsyncExitStack
 from dataclasses import replace
-from datetime import datetime
 from netrc import netrc
 from typing import Any, TypeVar
 
@@ -12,14 +11,10 @@ from aiohttp.client import _RequestContextManager
 from ._scraper import parse_circle_html, parse_login_token, parse_work_html
 from .circle import Circle
 from .exceptions import AuthenticationError, DlsiteError
-from .work import AgeCategory, BookType, Work, WorkOption, WorkType
+from .work import Work
 
 
 _T = TypeVar("_T")
-
-
-def _datetime_from_timestamp(timestamp: str) -> datetime:
-    return datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
 
 
 class BaseAPI(AbstractAsyncContextManager["_T"]):
@@ -136,8 +131,44 @@ class DlsiteAPI(BaseAPI["DlsiteAPI"]):
         Returns:
             Complete work information.
         """
+        try:
+            works = await self.product(workno=product_id)
+            if not works:
+                works = await self.product(workno=product_id, announce=True)
+            if works:
+                return works[0]
+        except DlsiteError:
+            pass
         work = await self.product_info(product_id)
         return await self._fill_work_details(work)
+
+    async def product(self, *, announce: bool = False, **query) -> list[Work]:
+        """Return embed/widget API product info.
+
+        Args:
+            announce: Force treating work as announced. Intended for internal
+                use only.
+            query: Product API query parameters. ``callback`` is unsupported
+                and will be ignored.
+
+        Returns:
+            Product information.
+
+        Raises:
+            DlsiteError: Failed to get product info.
+        """
+        url = "https://www.dlsite.com/maniax/api/=/product.json"
+        query.pop("callback", None)
+        if announce:
+            query["is_ana"] = 1
+        try:
+            async with self.get(url, params=query) as response:
+                data = await response.json()
+        except ClientError as e:
+            raise DlsiteError(f"Failed to get product info for query: {query}") from e
+        if data is None:
+            raise DlsiteError(f"Failed to get product info for query: {query}")
+        return [Work.from_json(d, announce=announce) for d in data]
 
     async def product_info(self, product_id: str) -> Work:
         """Return ajax API product info.
@@ -162,22 +193,7 @@ class DlsiteAPI(BaseAPI["DlsiteAPI"]):
             raise DlsiteError(f"Failed to get product info for {product_id}")
         info = data[product_id]
         info["product_id"] = product_id
-        info["age_category"] = AgeCategory(info["age_category"])
-        info["work_type"] = WorkType(info["work_type"])
-        if info.get("book_type"):
-            info["book_type"] = BookType(info["book_type"]["value"])
-        if info.get("regist_date"):
-            info["regist_date"] = _datetime_from_timestamp(info["regist_date"])
-        if info.get("options"):
-            options = []
-            for option in info.get("options", "").split("#"):
-                try:
-                    options.append(WorkOption(option))
-                except ValueError:
-                    pass
-            info["options"] = options
-
-        return Work.from_dict(info)
+        return Work.from_json(info)
 
     async def _fill_work_details(self, work: Work) -> Work:
         html = await self._fetch_work_html(work)
