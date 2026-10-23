@@ -37,29 +37,25 @@ Request features on the [Issue Tracker].
 
 ## How to set up your development environment
 
-You need Python 3.8+ and the following tools:
+You need Python 3.11+ and the following tools:
 
-- [Poetry]
+- [PDM]
 - [Nox]
-- [nox-poetry]
 
 Install the package with development requirements:
 
 ```console
-$ poetry install --all-extras
+$ pdm install
 ```
 
-You can now run an interactive Python session,
-or the command-line interface:
+You can now run an interactive Python session via PDM
 
 ```console
-$ poetry run python
-$ poetry run dlsite-async
+$ pdm run python
 ```
 
-[poetry]: https://python-poetry.org/
+[pdm]: https://pdm-project.org/
 [nox]: https://nox.thea.codes/
-[nox-poetry]: https://nox-poetry.readthedocs.io/
 
 ## How to test the project
 
