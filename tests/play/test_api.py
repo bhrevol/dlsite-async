@@ -3,8 +3,6 @@
 import re
 from datetime import datetime, timedelta, timezone
 
-from aioresponses import aioresponses
-
 from dlsite_async.play.api import PlayAPI
 from dlsite_async.play.models import (
     DownloadToken,
@@ -13,6 +11,8 @@ from dlsite_async.play.models import (
     _TreeFile,
     _TreeFolder,
 )
+
+from ..utils import mock_responses
 
 
 _URL_PATTERN = re.compile(r"^https://play(\.dl)?\.dlsite\.com")
@@ -131,22 +131,14 @@ async def test_playfile() -> None:
 
 async def test_download_token(play_api: PlayAPI) -> None:
     """Download token should be returned."""
-    with aioresponses() as m:
-        m.get(
-            _URL_PATTERN,
-            payload=_TEST_DOWNLOAD_TOKEN_JSON,
-        )
+    with mock_responses(play_api, json=_TEST_DOWNLOAD_TOKEN_JSON):
         assert _TEST_DOWNLOAD_TOKEN == await play_api.download_token(_TEST_WORKNO)
 
 
 async def test_ziptree(play_api: PlayAPI) -> None:
     """Ziptree should be returned."""
     token = _TEST_DOWNLOAD_TOKEN
-    with aioresponses() as m:
-        m.get(
-            _URL_PATTERN,
-            payload=_TEST_ZIPTREE_JSON,
-        )
+    with mock_responses(play_api, json=_TEST_ZIPTREE_JSON):
         ziptree = await play_api.ziptree(token)
         assert _TEST_ZIPTREE == ziptree
         assert {"foo/bar/baz.jpg": _TEST_PLAYFILE} == ziptree._dict

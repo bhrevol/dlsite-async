@@ -5,12 +5,13 @@ from copy import copy
 from dataclasses import fields, replace
 from datetime import datetime
 
-from aioresponses import aioresponses
 from pytest_mock import MockerFixture
 
 from dlsite_async.api import DlsiteAPI
 from dlsite_async.circle import Circle
 from dlsite_async.work import AgeCategory, BookType, Work, WorkType
+
+from .utils import mock_responses
 
 
 _URL_PATTERN = re.compile(r"^https://www\.dlsite\.com")
@@ -171,8 +172,8 @@ async def test_cookies() -> None:
     """18+ cookie should be set."""
     async with DlsiteAPI() as api:
         assert any(
-            cookie.key == "adultchecked" and cookie.value == "1"
-            for cookie in api.session.cookie_jar
+            cookie.name == "adultchecked" and cookie.value == "1"
+            for cookie in api.session.cookies.jar
         )
 
 
@@ -181,23 +182,19 @@ async def test_locale(mocker: MockerFixture) -> None:
     locale = "ja_JP"
     async with DlsiteAPI(locale=locale) as api:
         m = mocker.patch.object(api.session, "get")
-        api.get("http://foo/")
+        await api.get("http://foo/")
         expected = {"locale": locale}
         assert m.call_args.kwargs.get("params") == expected
         m.reset_mock()
 
-        api.get("http://foo/", params={"foo": "bar"})
+        await api.get("http://foo/", params={"foo": "bar"})
         expected.update({"foo": "bar"})
         assert m.call_args.kwargs.get("params") == expected
 
 
 async def test_product_info(api: DlsiteAPI) -> None:
     """Ajax API info should be filled."""
-    with aioresponses() as m:
-        m.get(
-            _URL_PATTERN,
-            payload=_TEST_INFO,
-        )
+    with mock_responses(api, json=_TEST_INFO):
         work = await api.product_info(_TEST_PRODUCT)
         _check_work_eq(_TEST_INFO_WORK, work)
 
@@ -205,21 +202,13 @@ async def test_product_info(api: DlsiteAPI) -> None:
 async def test_fill_work_details(api: DlsiteAPI) -> None:
     """Full product info should be filled."""
     work = copy(_TEST_INFO_WORK)
-    with aioresponses() as m:
-        m.get(
-            _URL_PATTERN,
-            body=_WORK_TEST_HTML,
-        )
+    with mock_responses(api, text=_WORK_TEST_HTML):
         work = await api._fill_work_details(work)
         _check_work_eq(_TEST_HTML_WORK, work)
 
 
 async def test_get_circle(api: DlsiteAPI) -> None:
     """Full circle info should be filled."""
-    with aioresponses() as m:
-        m.get(
-            _URL_PATTERN,
-            body=_CIRCLE_TEST_HTML,
-        )
+    with mock_responses(api, text=_CIRCLE_TEST_HTML):
         circle = await api.get_circle(_TEST_MAKER)
         _check_circle_eq(_TEST_CIRCLE, circle)
