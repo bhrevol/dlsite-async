@@ -3,7 +3,7 @@
 import re
 from copy import copy
 from dataclasses import fields, replace
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from pytest_mock import MockerFixture
 
@@ -35,14 +35,14 @@ _TEST_INFO_WORK = Work(
     work_name="Test Work",
     age_category=AgeCategory.R18,
     work_type=WorkType.VOICE_ASMR,
-    regist_date=datetime(2022, 1, 1, 0, 0, 0),
+    regist_date=datetime(2022, 1, 1, 0, 0, 0, tzinfo=timezone(timedelta(hours=9))),
     book_type=BookType.BOOK,
 )
 _TEST_HTML_WORK = replace(
     _TEST_INFO_WORK,
-    modified_date=datetime(2022, 1, 1, 0, 0, 0),
+    update_date=datetime(2022, 1, 1, 0, 0, 0, tzinfo=timezone(timedelta(hours=9))),
     page_count=123,
-    circle="Test Circle",
+    maker_name="Test Circle",
     voice_actor=["Test Seiyuu 1", "Test Seiyuu 2"],
     title_name_masked="Test Series",
 )
