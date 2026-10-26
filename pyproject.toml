@@ -121,7 +121,6 @@ mypy = [
     "mypy>=1.8.0"
 ]
 tests = [
-    "aioresponses<1.0.0,>=0.7.3",
     "pygments>=2.17.2",
     "pytest>=7.4.3",
     "pytest-asyncio<1.4.2,>=1.4.1",
