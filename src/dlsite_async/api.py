@@ -158,7 +158,7 @@ class DlsiteAPI(BaseAPI["DlsiteAPI"]):
             query["is_ana"] = 1
         try:
             response = await self.get(url, params=query)
-            data = await response.json()
+            data = response.json()
         except CurlError as e:
             raise DlsiteError(f"Failed to get product info for query: {query}") from e
         if data is None:
