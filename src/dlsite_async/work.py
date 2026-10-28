@@ -106,6 +106,24 @@ class WorkOption(str, Enum):
 
 
 @dataclass
+class TranslationInfo:
+    """DLsite work translation info."""
+
+    is_original: bool | None = None
+    is_volunteer: bool | None = None
+    original_workno: str | None = None
+    parent_workno: str | None = None
+    child_worknos: list[str] | None = None
+    lang: str | None = None
+
+    @classmethod
+    def from_dict(cls, d: Mapping[str, Any]) -> "TranslationInfo":
+        """Construct Work from a dictionary."""
+        names = {f.name for f in fields(cls)}
+        return cls(**{k: v for k, v in d.items() if k in names})
+
+
+@dataclass
 class Work:
     """DLsite work (product) class."""
 
@@ -148,6 +166,7 @@ class Work:
     intro_masked: str | None = None
     intro_s: str | None = None
     rate_count_detail: dict[int, int] | None = None
+    translation_info: TranslationInfo | None = None
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> "Work":
@@ -236,6 +255,9 @@ class Work:
                     info["rate_count_detail"][int(k)] = v
                 except ValueError:
                     pass
+        translation_info = info.pop("translation_info", None)
+        if translation_info:
+            info["translation_info"] = TranslationInfo.from_dict(translation_info)
         return cls.from_dict(info)
 
     @staticmethod
