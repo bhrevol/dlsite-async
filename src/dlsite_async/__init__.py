@@ -7,7 +7,7 @@ from .play.api import PlayAPI
 from .play.ebook import EbookSession
 from .play.epub import EpubFixedSession, EpubReflowableSession, EpubSession
 from .utils import find_maker_id, find_product_id
-from .work import AgeCategory, BookType, Work, WorkType
+from .work import AgeCategory, BookType, TranslationInfo, Work, WorkOption, WorkType
 
 
 __all__ = [
@@ -21,7 +21,9 @@ __all__ = [
     "EpubSession",
     "MakerType",
     "PlayAPI",
+    "TranslationInfo",
     "Work",
+    "WorkOption",
     "WorkType",
     "exceptions",
     "find_maker_id",
