@@ -147,6 +147,7 @@ class Work:
     intro: str | None = None
     intro_masked: str | None = None
     intro_s: str | None = None
+    rate_count_detail: dict[int, int] | None = None
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> "Work":
@@ -227,6 +228,14 @@ class Work:
                 size = content.get("file_size_unit")
                 info["file_size"] = size
                 break
+        rate_count: dict[str, int] | None = info.pop("rate_count_detail", None)
+        if rate_count:
+            info["rate_count_detail"] = {}
+            for k, v in rate_count.items():
+                try:
+                    info["rate_count_detail"][int(k)] = v
+                except ValueError:
+                    pass
         return cls.from_dict(info)
 
     @staticmethod
@@ -324,3 +333,14 @@ class Work:
     def series(self) -> str | None:
         """Series name."""
         return self.title_name_masked or self.title_name
+
+    @property
+    def rate_average(self) -> float | None:
+        if not self.rate_count_detail:
+            return None
+        rating = 0
+        total = 0
+        for k, v in self.rate_count_detail.items():
+            rating += k * v
+            total += v
+        return rating / total
