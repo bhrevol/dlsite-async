@@ -4,7 +4,10 @@ from collections.abc import Mapping
 from dataclasses import dataclass, fields
 from datetime import datetime, timedelta, timezone
 from enum import Enum, IntEnum
-from typing import Any
+from typing import Any, Self
+
+
+_JSONLanguageEdition = list[dict[str, Any]] | dict[str, dict[str, Any]] | None
 
 
 class AgeCategory(IntEnum):
@@ -106,7 +109,28 @@ class WorkOption(str, Enum):
 
 
 @dataclass
-class TranslationInfo:
+class _Serializable:
+    @classmethod
+    def from_dict(cls, d: Mapping[str, Any]) -> Self:
+        """Construct Work from a dictionary."""
+        names = {f.name for f in fields(cls)}
+        return cls(**{k: v for k, v in d.items() if k in names})
+
+
+@dataclass
+class LanguageEdition(_Serializable):
+    """DLsite work language edition info."""
+
+    workno: str
+    edition_id: int
+    lang: str
+    edition_type: str | None = None
+    label: str | None = None
+    display_order: int | None = None
+
+
+@dataclass
+class TranslationInfo(_Serializable):
     """DLsite work translation info."""
 
     is_original: bool | None = None
@@ -116,15 +140,9 @@ class TranslationInfo:
     child_worknos: list[str] | None = None
     lang: str | None = None
 
-    @classmethod
-    def from_dict(cls, d: Mapping[str, Any]) -> "TranslationInfo":
-        """Construct Work from a dictionary."""
-        names = {f.name for f in fields(cls)}
-        return cls(**{k: v for k, v in d.items() if k in names})
-
 
 @dataclass
-class Work:
+class Work(_Serializable):
     """DLsite work (product) class."""
 
     product_id: str
@@ -167,17 +185,12 @@ class Work:
     intro_s: str | None = None
     rate_count_detail: dict[int, int] | None = None
     translation_info: TranslationInfo | None = None
-
-    @classmethod
-    def from_dict(cls, d: Mapping[str, Any]) -> "Work":
-        """Construct Work from a dictionary."""
-        names = {f.name for f in fields(cls)}
-        return cls(**{k: v for k, v in d.items() if k in names})
+    language_editions: list[LanguageEdition] | None = None
 
     @classmethod
     def from_json(
         cls, d: Mapping[str, Any], announce: bool = False, locale: str | None = None
-    ) -> "Work":
+    ) -> Self:
         """Construct Work from DLsite API product info JSON."""
         info = dict(d)
         info["age_category"] = AgeCategory(info["age_category"])
@@ -209,13 +222,23 @@ class Work:
         info.pop("genre", None)
         if genres:
             info["genre"] = [genre.get("name") for genre in genres if genre.get("name")]
-        langs = [
-            edition.get("label")
-            for edition in info.get("language_editions", [])
-            if edition.get("label")
-        ]
-        if langs:
-            info["language"] = langs
+        lang_editions: _JSONLanguageEdition = info.pop("language_editions", None)
+        if lang_editions is not None:
+            lang_strings: list[str] = []
+            if isinstance(lang_editions, dict):
+                edition_it = (
+                    LanguageEdition.from_dict(v) for v in lang_editions.values()
+                )
+            else:
+                edition_it = (LanguageEdition.from_dict(e) for e in lang_editions)
+            editions = sorted(
+                edition_it, key=lambda x: (x.display_order is None, x.display_order)
+            )
+            if editions:
+                info["language_editions"] = editions
+                lang_strings = [edition.label for edition in editions if edition.label]
+                if lang_strings:
+                    info["language"] = lang_strings
         pages = info.get("pages") or info.get("page_number")
         if pages is not None:
             try:
