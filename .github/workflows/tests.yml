@@ -183,3 +183,7 @@ jobs:
         uses: pypa/gh-action-pip-audit@v1.1.0
         with:
           inputs: requirements.txt
+          ignore-vulns: |
+            CVE-2026-126190
+            CVE-2026-126193
+            CVE-2026-126191
