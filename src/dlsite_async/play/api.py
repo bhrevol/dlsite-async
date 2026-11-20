@@ -51,17 +51,24 @@ class PlayAPI(BaseAPI["PlayAPI"]):
         response = await self.get(url, params={"workno": workno})
         return DownloadToken.from_json(response.json())
 
-    async def ziptree(self, token: DownloadToken) -> ZipTree:
+    async def ziptree(
+        self,
+        token: DownloadToken,
+        timestamp: datetime | None = None,
+    ) -> ZipTree:
         """Return ziptree for the specified download.
 
         Args:
             token: A download token returned from `download_token`.
+            timestamp: Fetch ziptree version as of specified timestamp.
+                Defaults to current version.
 
         Returns:
             A new zip tree.
         """
+        timestamp = timestamp or datetime.now()
         url = f"{token.url}ziptree.json"
-        response = await self.get(url)
+        response = await self.get(url, params={"v": round(timestamp.timestamp())})
         return ZipTree.from_json(response.json())
 
     async def download_playfile(
@@ -104,7 +111,10 @@ class PlayAPI(BaseAPI["PlayAPI"]):
             dest.parent.mkdir(parents=True)
         if not force and dest.exists():
             raise FileExistsError(str(dest))
-        response = await self.get(url, stream=True, timeout=self._DL_TIMEOUT)
+        params = {"v": playfile.revision} if playfile.revision else {}
+        response = await self.get(
+            url, params=params, stream=True, timeout=self._DL_TIMEOUT
+        )
         try:
             with tempfile.NamedTemporaryFile(
                 prefix=dest.name, dir=dest.parent, delete=False
