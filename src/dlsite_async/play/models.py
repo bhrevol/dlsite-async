@@ -74,6 +74,7 @@ class PlayFile(_PlayModel):
     type: str
     files: dict[str, Any]
     hashname: str
+    revision: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, self.type, self.files)
@@ -135,6 +136,7 @@ class PlayFile(_PlayModel):
         cls,
         data: dict[str, Any],
         hashname: str | None = None,
+        revision: str | None = None,
     ) -> "PlayFile":
         """Construct a PlayFile from JSON response.
 
@@ -146,7 +148,13 @@ class PlayFile(_PlayModel):
         """
         type_ = data["type"]
         files = data.get(type_, {})
-        return cls(data["length"], data["type"], files, hashname=hashname or "")
+        return cls(
+            data["length"],
+            data["type"],
+            files,
+            hashname=hashname or "",
+            revision=revision,
+        )
 
 
 @dataclass(frozen=True)
@@ -233,8 +241,9 @@ class ZipTree(_PlayModel, Mapping[str, PlayFile]):
         """
         try:
             hash = data["hash"]
+            revision = data.get("revision")
             playfile = {
-                key: PlayFile.from_json(value, hashname=key)
+                key: PlayFile.from_json(value, hashname=key, revision=revision)
                 for key, value in data.get("playfile", {}).items()
             }
             tree = [_tree_entry(entry) for entry in data.get("tree", [])]
@@ -252,7 +261,7 @@ class ZipTree(_PlayModel, Mapping[str, PlayFile]):
             tree=tree,
             workno=data.get("workno"),
             version=data.get("version"),
-            revision=data.get("revision"),
+            revision=revision,
             updated_at=updated_at,
         )
 
