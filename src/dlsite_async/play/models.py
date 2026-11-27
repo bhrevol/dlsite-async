@@ -1,27 +1,27 @@
 """Play API response models."""
 
 from abc import ABC
-from collections.abc import Mapping
+from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass, fields
-from collections.abc import Iterable, Iterator
 from datetime import datetime
 from functools import cached_property
-from typing import Any, TypeVar, Union, cast
+from typing import Any, Self, TypeVar, Union, cast
+
 from typing_extensions import deprecated
 
 from ..exceptions import DlsiteError
 from ..utils import fromisoformat
-
+from .scramble import ScrambleInfo, descramble_tiles
 
 _PM = TypeVar("_PM", bound="_PlayModel")
 
 
 @dataclass(frozen=True)
-class _PlayModel(ABC):  # noqa: B024
+class _PlayModel(ABC):
     """Play API model."""
 
     @classmethod
-    def from_json(cls: type[_PM], data: dict[str, Any]) -> _PM:
+    def from_json(cls, data: dict[str, Any]) -> Self:
         """Construct a model from JSON response.
 
         Args:
@@ -155,6 +155,32 @@ class PlayFile(_PlayModel):
             hashname=hashname or "",
             revision=revision,
         )
+
+    @cached_property
+    def scramble_info(self) -> ScrambleInfo | None:
+        """Return scrambled image information for this playfile if it exists.
+
+        Note:
+            This is only applicable when ``PlayFile.type == "image"``.
+        """
+        if self.type == "image":
+            optimized = self.files.get("optimized", {})
+            width = optimized.get("width", 0)
+            height = optimized.get("height", 0)
+            return ScrambleInfo(
+                width=width,
+                height=height,
+                tiles=list(
+                    descramble_tiles(
+                        int(self.optimized_name[5:12], 16),
+                        width,
+                        height,
+                    )
+                )
+                if optimized.get("crypt")
+                else [],
+            )
+        return None
 
 
 @dataclass(frozen=True)
