@@ -25,6 +25,7 @@ from lxml import etree
 
 from ..exceptions import DlsiteError
 from .models import CSRReflowableToken, CSRToken, PlayFile, ZipTree
+from .scramble import ScrambleInfo, ScrambleTile
 
 if TYPE_CHECKING:
     from .api import PlayAPI
@@ -63,7 +64,7 @@ class _PageInfo:
     page_no: int
     total_part_size: int
     parts: list[_PagePart]
-    scramble: list[int]
+    scramble_info: ScrambleInfo | None
 
 
 @dataclass(frozen=True)
@@ -111,6 +112,7 @@ class EpubFixedSession(AbstractAsyncContextManager["EpubFixedSession"]):
         self._version: str | None = None
         self._scramble_size: tuple[int, int] | None = None
         self._wake_up: int | None = None
+        self._page_cache: dict[int, _PageInfo] = {}
 
     @property
     def page_count(self) -> int:
@@ -197,6 +199,16 @@ class EpubFixedSession(AbstractAsyncContextManager["EpubFixedSession"]):
         data = response.json()
         return CSRToken.from_json(data["values"])
 
+    async def get_page_scramble_info(
+        self,
+        index: int,
+    ) -> ScrambleInfo | None:
+        """Return ScrambleInfo for the specified page if it exists."""
+        if self._token is None:
+            raise DlsiteError("CSR session has not been loaded")
+        page_info = await self._download_page_info(index)
+        return page_info.scramble_info
+
     async def download_page(
         self,
         index: int,
@@ -267,12 +279,11 @@ class EpubFixedSession(AbstractAsyncContextManager["EpubFixedSession"]):
                     temp.close()
                     os.remove(temp.name)
                     raise
-            if descramble and part.scramble and self._scramble_size is not None:
+            if descramble and page_info.scramble_info is not None:
                 await asyncio.to_thread(
                     self._descramble,
                     temp.name,
-                    self._scramble_size,
-                    page_info.scramble,
+                    page_info.scramble_info,
                     **save_kwargs,
                 )
             os.replace(temp.name, dest)
@@ -285,6 +296,8 @@ class EpubFixedSession(AbstractAsyncContextManager["EpubFixedSession"]):
         assert self._wake_up is not None
         if index >= self._total_page:
             raise ValueError("Invalid page number")
+        if index in self._page_cache:
+            return self._page_cache[index]
         params = {
             "mode": _Mode.DL_PAGE_XML.value,
             "file": f"{index:04}.xml",
@@ -315,22 +328,57 @@ class EpubFixedSession(AbstractAsyncContextManager["EpubFixedSession"]):
         except KeyError as e:
             raise DlsiteError("Unexpected CSR viewer page data") from e
         scramble = root.findtext("Scramble")
-        return _PageInfo(
+        if self._scramble_size is not None:
+            (width, height) = self._scramble_size
+            scramble_info = ScrambleInfo(
+                width=width,
+                height=height,
+                tiles=list(
+                    self._descramble_tiles(
+                        self._scramble_size,
+                        [int(x.strip()) for x in scramble.split(",")],
+                    )
+                )
+                if scramble is not None
+                else [],
+            )
+        else:
+            scramble_info = None
+        self._page_cache[index] = _PageInfo(
             page_no=int(page_no),
             total_part_size=int(total_part_size),
             parts=parts,
-            scramble=(
-                [int(x.strip()) for x in scramble.split(",")]
-                if scramble is not None
-                else []
-            ),
+            scramble_info=scramble_info,
         )
+        return self._page_cache[index]
+
+    @staticmethod
+    def _descramble_tiles(
+        scramble_size: tuple[int, int],
+        scramble: Sequence[int],
+    ) -> Iterator[ScrambleTile]:
+        scramble_w, scramble_h = scramble_size
+        tile_w, tile_h = (264, 368)
+        tiles = [
+            (x * tile_w, y * tile_h)
+            for y in range(scramble_w)
+            for x in range(scramble_h)
+        ]
+        for i, src_index in enumerate(scramble):
+            scramble_x, scramble_y = tiles[src_index]
+            yield ScrambleTile(
+                width=tile_w,
+                height=tile_h,
+                scramble_x=scramble_x,
+                scramble_y=scramble_y,
+                original_x=(i % scramble_w) * tile_w,
+                original_y=(i // scramble_h) * tile_h,
+            )
 
     def _descramble(
         self,
         path: str | Path,
-        scramble_size: tuple[int, int],
-        scramble: Sequence[int],
+        scramble_info: ScrambleInfo,
         **save_kwargs: Any,
     ) -> None:
         try:
@@ -339,29 +387,18 @@ class EpubFixedSession(AbstractAsyncContextManager["EpubFixedSession"]):
             logger.warn("Image descramble requires installation with dlsite-async[pil]")
             return
         path = Path(path)
-        scramble_w, scramble_h = scramble_size
-        tile_w, tile_h = (264, 368)
         with Image.open(path) as im:
-            tiles = [
-                im.crop(
+            new_im = im.copy()
+            for tile in scramble_info.tiles:
+                tile_im = im.crop(
                     (
-                        x * tile_w,
-                        y * tile_h,
-                        (x + 1) * tile_w,
-                        (y + 1) * tile_h,
+                        tile.scramble_x,
+                        tile.scramble_y,
+                        tile.scramble_x + tile.width,
+                        tile.scramble_y + tile.height,
                     )
                 )
-                for y in range(scramble_w)
-                for x in range(scramble_h)
-            ]
-            new_im = im.copy()
-        if len(tiles) < len(scramble):
-            raise ValueError("Tile count does not match scramble count")
-        for i, src_index in enumerate(scramble):
-            tile = tiles[src_index]
-            x = i % scramble_w
-            y = i // scramble_h
-            new_im.paste(tile, (x * tile_w, y * tile_h))
+                new_im.paste(tile_im, (tile.original_x, tile.original_y))
         if path.suffix.lower() in (".jpg", ".jpeg") and "quality" not in save_kwargs:
             save_kwargs["quality"] = "keep"
         new_im.save(path, **save_kwargs)
