@@ -11,14 +11,59 @@ image viewer ``main.js``).
 
 import logging
 import math
+from collections.abc import Iterator
+from dataclasses import dataclass
 from pathlib import Path
 from random import Random
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from .models import PlayFile
+if TYPE_CHECKING:
+    from .models import PlayFile
 
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class ScrambleTile:
+    """Scrambled image tile.
+
+    Attributes:
+        width: Tile width in pixels.
+        height: Tile height in pixels.
+        scramble_x: x-coordinate of the tile in the scrambled image.
+        scramble_y: y-coordinate of the tile in the scrambled image.
+        original_x: x-coordinate of the tile in the original image.
+        original_y: y-coordinate of the tile in the original image.
+    """
+
+    width: int
+    height: int
+    scramble_x: int
+    scramble_y: int
+    original_x: int
+    original_y: int
+
+
+@dataclass(frozen=True)
+class ScrambleInfo:
+    """Scrambled image tileset information.
+
+    Attributes:
+        width: Original (descrambled) image width in pixels.
+        height: Original (descrambled) image height in pixels.
+        tiles: List of scrambled image tiles. Tile order is not guaranteed
+            and depends on the scramble method.
+
+    Note:
+        Scrambled image dimensions are aligned to tile dimensions. After
+        descrambling tiles, the resulting image should be cropped to
+        the original image width and height to remove padding.
+    """
+
+    width: int
+    height: int
+    tiles: list[ScrambleTile]
 
 
 class _MTRandom(Random):
@@ -65,7 +110,29 @@ def _mt_tiles(seed: int, length: int) -> list[int]:
     return a
 
 
-def descramble(path: str | Path, playfile: PlayFile, **save_kwargs: Any) -> None:
+def descramble_tiles(seed: int, width: int, height: int) -> Iterator[ScrambleTile]:
+    """Yield tiles for a scrambled image with the specified seed and dimensions."""
+    tile_w = 128
+    tiles_w = math.ceil(width / tile_w)
+    tiles_h = math.ceil(height / tile_w)
+    tiles = [(x * tile_w, y * tile_w) for y in range(tiles_h) for x in range(tiles_w)]
+    shuffle = {}
+    # tile order is reverse mapping MT prng output {<val>: index}
+    for v, k in enumerate(_mt_tiles(seed, len(tiles))):
+        shuffle[k] = v
+    for i in range(len(tiles)):
+        scramble_x, scramble_y = tiles[shuffle[i]]
+        yield ScrambleTile(
+            width=tile_w,
+            height=tile_w,
+            scramble_x=scramble_x,
+            scramble_y=scramble_y,
+            original_x=(i % tiles_w) * tile_w,
+            original_y=(i // tiles_w) * tile_w,
+        )
+
+
+def descramble(path: str | Path, playfile: "PlayFile", **save_kwargs: Any) -> None:
     """Descramble the specified image file.
 
     Args:
@@ -73,47 +140,33 @@ def descramble(path: str | Path, playfile: PlayFile, **save_kwargs: Any) -> None
         playfile: Original image PlayFile.
         save_kwargs: Additional arguments to be passed into Pillow ``Image.save()``.
     """
+    if not playfile.scramble_info:
+        return
+
     try:
         from PIL import Image
     except ImportError:  # pragma: no cover
-        logger.warn("Image descramble requires installation with dlsite-async[pil]")
+        logger.warning("Image descramble requires installation with dlsite-async[pil]")
         return
 
     path = Path(path)
     with Image.open(path) as im:
-        tile_w = 128
-        optimized = playfile.files["optimized"]
-        width = optimized["width"]
-        height = optimized["height"]
-        tiles_w = math.ceil(width / tile_w)
-        tiles_h = math.ceil(height / tile_w)
-        tiles = [
-            im.crop(
+        new_im = im.copy()
+        for tile in playfile.scramble_info.tiles:
+            tile_im = im.crop(
                 (
-                    x * tile_w,
-                    y * tile_w,
-                    (x + 1) * tile_w,
-                    (y + 1) * tile_w,
+                    tile.scramble_x,
+                    tile.scramble_y,
+                    tile.scramble_x + tile.width,
+                    tile.scramble_y + tile.height,
                 )
             )
-            for y in range(tiles_h)
-            for x in range(tiles_w)
-        ]
-        new_im = im.copy()
-
-    seed = int(playfile.optimized_name[5:12], 16)
-    shuffle = {}
-    # tile order is reverse mapping MT prng output {<val>: index}
-    for v, k in enumerate(_mt_tiles(seed, len(tiles))):
-        shuffle[k] = v
-    for i in range(len(tiles)):
-        tile = tiles[shuffle[i]]
-        x = i % tiles_w
-        y = i // tiles_w
-        new_im.paste(tile, (x * tile_w, y * tile_w))
+            new_im.paste(tile_im, (tile.original_x, tile.original_y))
     # crop to actual image dimensions
     # (scrambled image is padded to align to 128 pixel tile boundary)
-    new_im = new_im.crop((0, 0, width, height))
+    new_im = new_im.crop(
+        (0, 0, playfile.scramble_info.width, playfile.scramble_info.height)
+    )
     if path.suffix.lower() in (".jpg", ".jpeg") and "quality" not in save_kwargs:
         save_kwargs["quality"] = "keep" if new_im.format == "JPEG" else 95
     new_im.save(path, **save_kwargs)

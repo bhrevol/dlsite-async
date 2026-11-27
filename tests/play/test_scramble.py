@@ -42,6 +42,8 @@ def test_descramble_crops_to_original_size(tmp_path: Path) -> None:
         },
         "abc123",
     )
+    assert playfile.scramble_info is not None
+    assert len(playfile.scramble_info.tiles) == 0
     descramble(image_file, playfile)
 
     with Image.open(image_file) as result:
@@ -83,10 +85,13 @@ def test_descramble(tmp_path: Path) -> None:
                 "length": 1,
                 "width": 256,
                 "height": 256,
+                "crypt": True,
             }
         },
         "abc123",
     )
+    assert playfile.scramble_info is not None
+    assert len(playfile.scramble_info.tiles) == 4
     descramble(image_file, playfile)
     with Image.open(image_file) as im:
         px = im.load()
